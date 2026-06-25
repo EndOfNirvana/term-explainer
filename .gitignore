@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.git/
+*.ps1
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+test-main.js

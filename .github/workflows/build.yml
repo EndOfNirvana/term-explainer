@@ -1,0 +1,69 @@
+name: Build & Package
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [arm64, x64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Package macOS (${{ matrix.arch }})
+        run: |
+          npx electron-packager . "术语解释器" \
+            --platform=darwin \
+            --arch=${{ matrix.arch }} \
+            --out=dist \
+            --overwrite \
+            --app-version=3.1.0 \
+            --ignore="node_modules/\.cache"
+
+      - name: Zip for distribution
+        run: |
+          cd dist
+          zip -r "术语解释器-macOS-${{ matrix.arch }}.zip" "术语解释器-darwin-${{ matrix.arch }}"/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 术语解释器-macOS-${{ matrix.arch }}
+          path: dist/术语解释器-macOS-${{ matrix.arch }}.zip
+          retention-days: 90
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Package Windows (x64)
+        run: |
+          npx electron-packager . "术语解释器" --platform=win32 --arch=x64 --out=dist --overwrite --icon=build/icon.ico --app-version=3.1.0 --ignore="node_modules/\.cache"
+
+      - name: Zip for distribution
+        run: |
+          Compress-Archive -Path "dist/术语解释器-win32-x64/*" -DestinationPath "dist/术语解释器-Windows-x64.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 术语解释器-Windows-x64
+          path: dist/术语解释器-Windows-x64.zip
+          retention-days: 90

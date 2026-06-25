@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: transparent;
+  overflow: hidden;
+  height: 100vh;
+  user-select: none;
+}
+/* 外层容器 - 拖动区域 */
+.wrapper {
+  margin: 8px;
+  border-radius: 18px;
+  background: rgba(15, 18, 28, 0.94);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(100, 116, 255, 0.25);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(100, 116, 255, 0.1) inset;
+  color: #e2e8f0;
+  height: calc(100vh - 16px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* 顶部拖拽条 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  -webkit-app-region: drag;
+  cursor: grab;
+  background: rgba(100, 116, 255, 0.08);
+  border-bottom: 1px solid rgba(100, 116, 255, 0.12);
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.header-badge {
+  font-size: 0.72rem;
+  color: #818cf8;
+  background: rgba(100, 116, 255, 0.15);
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header-actions {
+  display: flex;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+.btn-header {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(100, 116, 255, 0.12);
+  color: #94a3b8;
+  transition: all 0.15s;
+}
+.btn-header:hover { background: rgba(100, 116, 255, 0.25); color: #e2e8f0; }
+.btn-header.close:hover { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
+
+/* 滚动内容区 */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.content::-webkit-scrollbar { width: 4px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb { background: rgba(100,116,255,0.2); border-radius: 2px; }
+
+/* 加载状态 */
+.loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid rgba(100,116,255,0.2);
+  border-top-color: #818cf8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 0.82rem; color: #64748b; }
+
+/* 卡片 */
+.card {
+  background: rgba(100, 116, 255, 0.06);
+  border: 1px solid rgba(100, 116, 255, 0.15);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.card:hover {
+  background: rgba(100, 116, 255, 0.12);
+  border-color: rgba(100, 116, 255, 0.35);
+  transform: translateX(2px);
+}
+.card:hover .copy-hint { opacity: 1; }
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.card-icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+.card-icon.def { background: rgba(99, 102, 241, 0.2); }
+.card-icon.p1 { background: rgba(34, 197, 94, 0.2); }
+.card-icon.p2 { background: rgba(245, 158, 11, 0.2); }
+.card-title {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.card-body {
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: #cbd5e1;
+}
+.copy-hint {
+  position: absolute;
+  top: 10px; right: 12px;
+  font-size: 0.65rem;
+  color: #818cf8;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* 输入区（无文本时） */
+.input-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  gap: 14px;
+}
+.input-section .prompt {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-align: center;
+}
+.input-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.input-row input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(100,116,255,0.3);
+  background: rgba(15,18,28,0.8);
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  outline: none;
+}
+.input-row input:focus { border-color: #818cf8; }
+.input-row button {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.input-row button:hover { opacity: 0.9; transform: scale(1.02); }
+
+/* 错误状态 */
+.error-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+}
+.error-msg {
+  font-size: 0.85rem;
+  color: #f87171;
+  text-align: center;
+}
+.error-hint {
+  font-size: 0.72rem;
+  color: #64748b;
+  text-align: center;
+  line-height: 1.5;
+}
+</style>
+</head>
+<body>
+
+<div class="wrapper" id="wrapper">
+  <!-- 顶部拖拽条 -->
+  <div class="header">
+    <div class="header-left">
+      <span style="font-size:0.9rem;">🔍</span>
+      <span class="header-badge" id="headerBadge">术语解释</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-header" onclick="api.closePopup()" title="关闭 (Esc)">✕</button>
+    </div>
+  </div>
+
+  <!-- 内容区 -->
+  <div class="content" id="contentArea">
+    <!-- 加载状态 -->
+    <div class="loading" id="loadingState">
+      <div class="spinner"></div>
+      <div class="loading-text">正在解释「<b id="loadingTerm"></b>」...</div>
+    </div>
+
+    <!-- 输入区（无选中文本时） -->
+    <div class="input-section" id="inputState">
+      <div class="prompt">未检测到选中文本<br>请手动输入术语</div>
+      <div class="input-row">
+        <input type="text" id="manualInput" placeholder="输入术语..." autofocus>
+        <button onclick="manualQuery()">⚡ 解释</button>
+      </div>
+    </div>
+
+    <!-- 错误 -->
+    <div class="error-section" id="errorState">
+      <div class="error-msg" id="errorMsg"></div>
+      <div class="error-hint" id="errorHint"></div>
+    </div>
+
+    <!-- 解释结果 -->
+    <div id="resultState" style="display:none;flex-direction:column;gap:10px;">
+      <div class="card" id="cardDef" onclick="copyCard(this)">
+        <div class="card-header">
+          <div class="card-icon def">📖</div>
+          <div class="card-title">学术定义</div>
+        </div>
+        <div class="card-body" id="contentDef"></div>
+        <div class="copy-hint">点击复制</div>
+      </div>
+      <div class="card" id="cardPlain1" onclick="copyCard(this)">
+        <div class="card-header">
+          <div class="card-icon p1">💡</div>
+          <div class="card-title">通俗理解 ①</div>
+        </div>
+        <div class="card-body" id="contentPlain1"></div>
+        <div class="copy-hint">点击复制</div>
+      </div>
+      <div class="card" id="cardPlain2" onclick="copyCard(this)">
+        <div class="card-header">
+          <div class="card-icon p2">💡</div>
+          <div class="card-title">通俗理解 ②</div>
+        </div>
+        <div class="card-body" id="contentPlain2"></div>
+        <div class="copy-hint">点击复制</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const api = window.electronAPI;
+
+// ===== 状态管理 =====
+function showOnly(id) {
+  ['loadingState','inputState','errorState','resultState'].forEach(x => {
+    document.getElementById(x).style.display = 'none';
+  });
+  const el = document.getElementById(id);
+  if (el) el.style.display = (id === 'resultState') ? 'flex' : 'flex';
+}
+
+function showLoading(term) {
+  showOnly('loadingState');
+  document.getElementById('loadingTerm').textContent = term;
+  document.getElementById('headerBadge').textContent = term;
+}
+
+function showInput() {
+  showOnly('inputState');
+  document.getElementById('manualInput').focus();
+}
+
+function showError(msg, hint) {
+  showOnly('errorState');
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorHint').textContent = hint;
+}
+
+function showResult(term, data) {
+  showOnly('resultState');
+  document.getElementById('headerBadge').textContent = term;
+  document.getElementById('contentDef').textContent = data.definition || '(无)';
+  document.getElementById('contentPlain1').textContent = data.plain1 || '(无)';
+  document.getElementById('contentPlain2').textContent = data.plain2 || '(无)';
+}
+
+// ===== 复制 =====
+function copyCard(card) {
+  const body = card.querySelector('.card-body');
+  if (body) {
+    navigator.clipboard.writeText(body.textContent).then(() => {
+      const hint = card.querySelector('.copy-hint');
+      if (hint) {
+        hint.textContent = '✅ 已复制';
+        hint.style.opacity = '1';
+        setTimeout(() => { hint.textContent = '点击复制'; hint.style.opacity = ''; }, 1500);
+      }
+    });
+  }
+}
+
+// ===== 手动查询 =====
+async function manualQuery() {
+  const term = document.getElementById('manualInput').value.trim();
+  if (!term) return;
+  await doQuery(term);
+}
+
+// ===== AI 查询（通过主进程 IPC，稳定可靠）=====
+async function doQuery(term) {
+  showLoading(term);
+
+  try {
+    // 通过 IPC 调用主进程的 LLM 方法（避免渲染进程直接 fetch 的不稳定）
+    const result = await api.callLLM(term);
+
+    if (!result || !result.success) {
+      showError('查询失败', result?.error || '未知错误');
+      return;
+    }
+
+    if (result.data) {
+      // 正常解析成功
+      showResult(term, result.data);
+    } else if (result.rawContent) {
+      // 模型返回了内容但 JSON 解析失败，尝试前端 fallback
+      const fallback = frontendFallbackParse(result.rawContent);
+      showResult(term, fallback);
+    } else {
+      showError('API 返回异常', '模型未返回有效内容，请重试');
+    }
+
+  } catch (e) {
+    console.error('doQuery error:', e);
+    showError('查询异常', e.message?.slice(0, 100) || '未知错误');
+  }
+}
+
+// 前端降级解析（备用，通常不会走到这里因为主进程已经做了 5 层解析）
+function frontendFallbackParse(content) {
+  const def = matchField(content, ['学术定义', 'definition', '定义', '是什么']);
+  const p1 = matchField(content, ['通俗理解①', '通俗理解1', 'plain1', '理解①', '大白话', '通俗讲']);
+  const p2 = matchField(content, ['通俗理解②', '通俗理解2', 'plain2', '理解②', '换个角度', '另一种']);
+
+  // 如果还是解析不到，按段落分配
+  if (!def && !p1 && !p2) {
+    const parts = content.split(/\n{2,}/).filter(p => p.trim().length > 5);
+    return {
+      definition: parts[0]?.trim() || '未能提取定义',
+      plain1: parts[1]?.trim() || '未能提取通俗理解①',
+      plain2: parts[2]?.trim() || '未能提取通俗理解②'
+    };
+  }
+
+  return {
+    definition: def || '未能提取定义',
+    plain1: p1 || '未能提取通俗理解①',
+    plain2: p2 || '未能提取通俗理解②'
+  };
+}
+
+function matchField(text, keys) {
+  for (const key of keys) {
+    const regex = new RegExp(`["']?${key}["']?\\s*[：:]\\s*["']?([^\\n]+)`, 'im');
+    const m = text.match(regex);
+    if (m) return m[1].trim().replace(/^["']|["']$/g, '');
+  }
+  return null;
+}
+
+// ===== 快捷键 =====
+let cancelKey = 'Escape';
+
+api.onConfigCancelKey((key) => {
+  if (key && key.trim()) cancelKey = key.trim();
+});
+
+document.addEventListener('keydown', (e) => {
+  // 使用配置的取消键关闭弹窗
+  const configuredKey = normalizeKey(cancelKey);
+  const pressedKey = normalizeKey(e.key);
+
+  if (pressedKey === configuredKey) {
+    api.closePopup();
+  }
+
+  // 回车提交手动输入
+  if (e.key === 'Enter' && document.getElementById('inputState').style.display !== 'none') {
+    manualQuery();
+  }
+});
+
+function normalizeKey(key) {
+  return key.toLowerCase().replace(/\s/g, '');
+}
+
+// ===== 初始化 =====
+api.onInitTerm((term) => {
+  if (term && term.trim()) {
+    doQuery(term.trim());
+  } else {
+    showInput();
+  }
+});
+</script>
+</body>
+</html>

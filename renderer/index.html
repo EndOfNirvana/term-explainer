@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>技术黑话翻译器 · 实时路演生成器</title>
+<style>
+/* ============ CSS Variables & Reset ============ */
+:root {
+  --bg-deep: #060a13;
+  --bg-card: rgba(15, 23, 42, 0.85);
+  --bg-card-hover: rgba(20, 30, 55, 0.92);
+  --border-subtle: rgba(99, 102, 241, 0.15);
+  --border-glow: rgba(99, 102, 241, 0.5);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent-indigo: #6366f1;
+  --accent-purple: #8b5cf6;
+  --accent-cyan: #06b6d4;
+  --accent-amber: #f59e0b;
+  --accent-emerald: #10b981;
+  --accent-rose: #f43f5e;
+  --gradient-main: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  --gradient-dark: linear-gradient(135deg, #1e1b4b 0%, #0f172a 50%, #020617 100%);
+  --gradient-card: linear-gradient(145deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+  --glow-indigo: 0 0 30px rgba(99, 102, 241, 0.3);
+  --glow-purple: 0 0 40px rgba(139, 92, 246, 0.25);
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ============ Particle Background ============ */
+#particles-canvas {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+}
+
+/* ============ Main Container ============ */
+.app-container {
+  position: relative; z-index: 1;
+  max-width: 1100px; margin: 0 auto; padding: 40px 24px 60px;
+}
+
+/* ============ Header ============ */
+.header {
+  text-align: center; margin-bottom: 36px;
+}
+.header .badge {
+  display: inline-block;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid var(--border-subtle);
+  color: var(--accent-indigo);
+  font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em;
+  padding: 5px 14px; border-radius: 20px; margin-bottom: 16px;
+}
+.header h1 {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 800; letter-spacing: -0.02em;
+  background: var(--gradient-main);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+.header .subtitle {
+  font-size: 1.05rem; color: var(--text-secondary);
+  font-weight: 400; letter-spacing: 0.02em;
+}
+
+/* ============ Input Section ============ */
+.input-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  margin-bottom: 28px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.input-section:focus-within {
+  border-color: var(--border-glow);
+  box-shadow: var(--glow-indigo);
+}
+.input-row {
+  display: flex; gap: 12px; align-items: center;
+}
+.input-row input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 1.05rem; padding: 14px 20px;
+  outline: none; transition: border-color 0.25s, box-shadow 0.25s;
+  font-family: inherit;
+}
+.input-row input::placeholder { color: var(--text-muted); }
+.input-row input:focus {
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+.btn-generate {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--gradient-main);
+  border: none; color: #fff;
+  font-size: 1rem; font-weight: 700;
+  padding: 14px 28px; border-radius: var(--radius-sm);
+  cursor: pointer; white-space: nowrap;
+  transition: transform 0.2s, box-shadow 0.3s, opacity 0.2s;
+  letter-spacing: 0.03em;
+}
+.btn-generate:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+}
+.btn-generate:active { transform: scale(0.97); }
+.btn-generate:disabled {
+  opacity: 0.6; cursor: not-allowed; transform: none;
+}
+
+.quick-tags {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;
+}
+.quick-tag {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: var(--text-secondary);
+  font-size: 0.8rem; padding: 6px 14px; border-radius: 20px;
+  cursor: pointer; transition: all 0.2s;
+}
+.quick-tag:hover {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: var(--accent-indigo);
+  color: var(--text-primary);
+}
+
+/* ============ Loading State ============ */
+.loading-overlay {
+  display: none; text-align: center; padding: 50px 20px;
+}
+.loading-overlay.active { display: block; }
+.loading-spinner {
+  width: 48px; height: 48px;
+  border: 3px solid rgba(99, 102, 241, 0.2);
+  border-top-color: var(--accent-indigo);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text {
+  color: var(--text-secondary); font-size: 0.95rem;
+}
+.loading-dots::after {
+  content: '';
+  animation: dots 1.5s steps(3, end) infinite;
+}
+@keyframes dots {
+  0%   { content: ''; }
+  33%  { content: '.'; }
+  66%  { content: '..'; }
+  100% { content: '...'; }
+}
+
+/* ============ Results Container ============ */
+.results {
+  display: none;
+}
+.results.active { display: block; }
+
+/* Section Title */
+.section-label {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--accent-indigo);
+  margin-bottom: 14px;
+}
+.section-label::after {
+  content: '';
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.3), transparent);
+}
+
+/* ============ One-Liner Card ============ */
+.one-liner-card {
+  background: var(--gradient-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px; margin-bottom: 20px;
+  position: relative; overflow: hidden;
+  backdrop-filter: blur(16px);
+}
+.one-liner-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+  background: var(--gradient-main); border-radius: 4px 0 0 4px;
+}
+.one-liner-card .icon-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--accent-amber); font-size: 0.85rem; font-weight: 600;
+  margin-bottom: 12px;
+}
+.one-liner-card .value-text {
+  font-size: 1.35rem; font-weight: 700; line-height: 1.5;
+  color: #f1f5f9;
+}
+.tech-name-highlight {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+  color: var(--accent-purple); padding: 2px 8px; border-radius: 4px;
+  font-weight: 800;
+}
+
+/* ============ Scenario Cards ============ */
+.scenarios-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px; margin-bottom: 20px;
+}
+.scenario-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 24px 22px;
+  backdrop-filter: blur(12px);
+  transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+  position: relative;
+}
+.scenario-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-glow);
+  box-shadow: var(--glow-indigo);
+}
+.scenario-card .sc-num {
+  font-family: var(--font-mono);
+  font-size: 0.75rem; font-weight: 700; color: var(--accent-indigo);
+  margin-bottom: 8px; letter-spacing: 0.05em;
+}
+.scenario-card .sc-title {
+  font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: #f1f5f9;
+}
+.scenario-card .sc-desc {
+  font-size: 0.88rem; color: var(--text-secondary);
+  line-height: 1.55; margin-bottom: 14px;
+}
+.scenario-card .sc-market {
+  display: inline-block;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: var(--accent-amber);
+  font-size: 0.82rem; font-weight: 700; padding: 4px 12px; border-radius: 6px;
+}
+
+/* ============ Pitch Structure ============ */
+.pitch-structure {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  backdrop-filter: blur(16px);
+}
+.pitch-flow {
+  display: flex; align-items: flex-start; gap: 0;
+  overflow-x: auto; padding: 10px 0;
+}
+.pitch-step {
+  flex: 1; min-width: 150px; position: relative;
+  text-align: center; padding: 0 8px;
+}
+.pitch-step:not(:last-child)::after {
+  content: '→';
+  position: absolute; right: -8px; top: 18px;
+  color: var(--accent-indigo); font-size: 1.2rem; font-weight: 700;
+}
+.pitch-step .step-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 10px; font-size: 1.2rem;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid var(--border-subtle);
+}
+.pitch-step .step-label {
+  font-size: 0.8rem; font-weight: 700; color: var(--accent-indigo);
+  letter-spacing: 0.04em; margin-bottom: 6px;
+}
+.pitch-step .step-content {
+  font-size: 0.85rem; color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ============ Toolbar ============ */
+.toolbar {
+  display: flex; gap: 10px; justify-content: flex-end;
+  margin-top: 20px;
+}
+.btn-tool {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-secondary);
+  font-size: 0.78rem; padding: 8px 16px; border-radius: 8px;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-tool:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-primary);
+}
+
+/* ============ Settings Panel ============ */
+.settings-toggle {
+  position: fixed; bottom: 24px; right: 24px; z-index: 100;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s; font-size: 1rem;
+}
+.settings-toggle:hover { color: var(--text-primary); border-color: var(--border-glow); }
+.settings-panel {
+  position: fixed; bottom: 80px; right: 24px; z-index: 100;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md); padding: 20px; width: 300px;
+  display: none; backdrop-filter: blur(20px);
+}
+.settings-panel.active { display: block; }
+.settings-panel label {
+  display: block; font-size: 0.78rem; color: var(--text-muted);
+  margin-bottom: 4px; font-weight: 600;
+}
+.settings-panel input, .settings-panel select {
+  width: 100%; background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px; color: var(--text-primary);
+  padding: 8px 12px; font-size: 0.82rem; margin-bottom: 12px;
+  outline: none; font-family: inherit;
+}
+.settings-panel .note {
+  font-size: 0.72rem; color: var(--text-muted);
+  margin-top: -8px; margin-bottom: 12px;
+}
+.api-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.75rem; padding: 3px 8px; border-radius: 10px;
+  margin-left: 8px;
+}
+.api-status.on {
+  background: rgba(16, 185, 129, 0.12); color: var(--accent-emerald);
+}
+.api-status.off {
+  background: rgba(100, 116, 139, 0.12); color: var(--text-muted);
+}
+
+/* ============ Presentation Mode ============ */
+.present-mode .input-section,
+.present-mode .header .badge,
+.present-mode .header .subtitle,
+.present-mode .toolbar,
+.present-mode .settings-toggle,
+.present-mode .quick-tags { display: none !important; }
+.present-mode .header h1 { font-size: 2rem; }
+.present-mode .app-container { padding: 20px 40px; }
+.present-mode .results { display: block !important; }
+.present-exit {
+  display: none; position: fixed; top: 16px; right: 24px; z-index: 200;
+  background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; padding: 6px 14px; border-radius: 8px; cursor: pointer;
+  font-size: 0.8rem;
+}
+.present-mode .present-exit { display: block; }
+
+/* ============ Animations ============ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+.anim-fade-up {
+  animation: fadeInUp 0.5s ease forwards;
+  opacity: 0;
+}
+.anim-scale-in {
+  animation: scaleIn 0.4s ease forwards;
+  opacity: 0;
+}
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+
+/* ============ Responsive ============ */
+@media (max-width: 768px) {
+  .scenarios-grid { grid-template-columns: 1fr; }
+  .pitch-flow { flex-wrap: wrap; }
+  .pitch-step:not(:last-child)::after { display: none; }
+  .pitch-step { min-width: 100%; margin-bottom: 12px; }
+  .input-row { flex-direction: column; }
+  .btn-generate { width: 100%; justify-content: center; }
+}
+@media (min-width: 1400px) {
+  .app-container { max-width: 1300px; }
+  .scenarios-grid { gap: 24px; }
+}
+</style>
+</head>
+<body>
+<canvas id="particles-canvas"></canvas>
+
+<div class="present-exit" onclick="togglePresentation()">✕ 退出演示模式</div>
+
+<div class="app-container">
+  <!-- Header -->
+  <header class="header">
+    <div class="badge">AI + 硬科技智造 · 第4组</div>
+    <h1>技术黑话翻译器 × 实时路演生成器</h1>
+    <p class="subtitle">输入技术参数 → 即时生成投资人版价值故事 & 可视化路演页</p>
+  </header>
+
+  <!-- Input Section -->
+  <section class="input-section" id="inputSection">
+    <div class="input-row">
+      <input type="text" id="techInput"
+        placeholder="输入任意技术名词，如：高密度触觉阵列传感器、六维力反馈灵巧手…"
+        autocomplete="off">
+      <button class="btn-generate" id="btnGenerate" onclick="generate()">
+        <span>⚡</span> 生成路演
+      </button>
+    </div>
+    <div class="quick-tags">
+      <span class="quick-tag" data-term="高密度触觉阵列传感器">高密度触觉阵列传感器</span>
+      <span class="quick-tag" data-term="六维力反馈灵巧手">六维力反馈灵巧手</span>
+      <span class="quick-tag" data-term="纳米级精密定位平台">纳米级精密定位平台</span>
+      <span class="quick-tag" data-term="液态金属柔性电路">液态金属柔性电路</span>
+      <span class="quick-tag" data-term="量子点光谱芯片">量子点光谱芯片</span>
+      <span class="quick-tag" data-term="脑机接口运动解码">脑机接口运动解码</span>
+    </div>
+  </section>
+
+  <!-- Loading -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">正在分析技术关键词，生成投资人视角路演<span class="loading-dots"></span></p>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+    <!-- One-liner -->
+    <div class="section-label">💡 一句话价值翻译</div>
+    <div class="one-liner-card anim-fade-up">
+      <div class="icon-label">🎯 投资人视角</div>
+      <div class="value-text" id="oneLiner"></div>
+    </div>
+
+    <!-- Scenarios -->
+    <div class="section-label">🎯 三大应用场景 & 市场规模</div>
+    <div class="scenarios-grid" id="scenariosGrid">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- Pitch Structure -->
+    <div class="section-label">📊 一页路演结构</div>
+    <div class="pitch-structure anim-fade-up delay-3">
+      <div class="pitch-flow" id="pitchFlow">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button class="btn-tool" onclick="togglePresentation()">📺 演示模式</button>
+      <button class="btn-tool" onclick="copyContent()">📋 复制内容</button>
+      <button class="btn-tool" onclick="resetAll()">🔄 重新生成</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<button class="settings-toggle" id="settingsToggle" title="设置" onclick="toggleSettings()">⚙</button>
+<div class="settings-panel" id="settingsPanel">
+  <label>引擎模式</label>
+  <select id="engineMode" onchange="onEngineChange()">
+    <option value="builtin">内置引擎（离线可用）</option>
+    <option value="api">AI 增强（需配置 API）</option>
+  </select>
+  <div id="apiConfig" style="display:none">
+    <label>API Endpoint</label>
+    <input type="text" id="apiEndpoint" placeholder="https://api.openai.com/v1/chat/completions">
+    <label>API Key</label>
+    <input type="password" id="apiKey" placeholder="sk-...">
+    <label>模型</label>
+    <input type="text" id="apiModel" placeholder="gpt-4o-mini">
+    <p class="note">支持 OpenAI 兼容接口。Key 仅保存在浏览器本地。</p>
+  </div>
+</div>
+
+<script>
+// ============ Particle Background ============
+(function() {
+  const canvas = document.getElementById('particles-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let w, h;
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  class Particle {
+    constructor() {
+      this.reset();
+      this.y = Math.random() * h;
+    }
+    reset() {
+      this.x = Math.random() * w;
+      this.y = -10;
+      this.size = Math.random() * 1.8 + 0.5;
+      this.speed = Math.random() * 0.4 + 0.15;
+      this.opacity = Math.random() * 0.5 + 0.1;
+    }
+    update() {
+      this.y += this.speed;
+      if (this.y > h + 10) this.reset();
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(99, 102, 241, ${this.opacity})`;
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < 60; i++) {
+    particles.push(new Particle());
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, w, h);
+    particles.forEach(p => { p.update(); p.draw(); });
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+// ============ Knowledge Base ============
+const KNOWLEDGE = {
+  // 触觉传感器
+  tactile_sensor: {
+    keywords: ['触觉', '传感器', '力觉', '压力', '阵列', '柔性', '压阻', '电容', '压电', '触感'],
+    oneLiner: (term) => `"${term}"——让机器拥有比人类指尖更灵敏的「触觉」，实现微米级力感知与物体识别，是机器人从"眼明手瞎"走向"眼手协同"的最后一公里核心技术。`,
+    scenarios: [
+      { title: '工业自动化精密装配', desc: '电子元器件微米级贴合、汽车精密零部件组装，替代人工完成高重复性精密操作，良率从85%提升到99.5%。', market: '全球 ¥500亿+' },
+      { title: '微创手术机器人', desc: '触觉反馈让手术机器人"感知"组织硬度与血管搏动，实现零失误精细操作，大幅降低手术并发症。', market: '全球 ¥2000亿+' },
+      { title: '消费电子 & 人机交互', desc: '下一代手机/VR手套的触觉反馈模组，让虚拟世界"摸得着"，开启触觉互联网时代。', market: '全球 ¥300亿+' }
+    ],
+    pitch: [
+      { icon: '⚠️', label: '问题', content: '传统机器人"眼明手瞎"，90%精密装配仍需人工。传感器精度不足导致抓取失败率高，限制智造升级。' },
+      { icon: '🔬', label: '技术壁垒', content: '高密度阵列工艺（像素级传感单元）、多模态力解耦算法、柔性基底材料耐久性——三者缺一不可。' },
+      { icon: '🎯', label: '场景', content: '半导体封装→手术机器人→航天器在轨维修，从千亿级存量市场切入，逐级渗透到新兴增量场景。' },
+      { icon: '💰', label: '商业模式', content: '传感器模组直销（B2B）+ 感知算法授权（SaaS），初期绑定制程设备厂商，中期搭建开发者生态。' },
+      { icon: '👥', label: '团队', content: '核心团队需覆盖 MEMS 工艺 + 嵌入式系统 + 机器人学 + 商业化。建议产学研联合体结构。' }
+    ]
+  },
+  // 灵巧手
+  dexterous_hand: {
+    keywords: ['灵巧手', '机械手', '抓取', '手指', '关节', '驱动', '欠驱动', '力反馈', '末端执行器', '仿生手'],
+    oneLiner: (term) => `"${term}"——替代人手执行微米级芯片贴合到复杂手术缝合，是通用机器人的"终极末端"，决定人形机器人能否真正走进产线。`,
+    scenarios: [
+      { title: '半导体精密制造', desc: '晶圆搬运、芯片贴合、微组装——灵巧手替代洁净室人工操作，实现7×24小时零差错生产。', market: '全球 ¥8000亿+' },
+      { title: '医疗手术 & 康复', desc: '显微外科缝合、骨科精准定位、假肢控制——灵巧手让远程手术和智能假肢成为现实。', market: '全球 ¥2500亿+' },
+      { title: '太空 & 深海作业', desc: '在轨卫星维修、深潜采样——需要极致灵巧和极端环境耐受力的场景，人力无法抵达。', market: '全球 ¥500亿+' }
+    ],
+    pitch: [
+      { icon: '⚠️', label: '问题', content: '工业产线上80%的精细操作仍依赖人手，老龄化加剧劳动力缺口。现有机械爪不够灵巧，精度和自由度严重不足。' },
+      { icon: '🔬', label: '技术壁垒', content: '多自由度微型驱动（20+自由度）、高精度力控算法（<0.01N分辨率）、多模态感知融合——系统集成难度极高。' },
+      { icon: '🎯', label: '场景', content: '半导体/面板制造（刚需刚性）→ 医疗手术（高壁垒高价值）→ 人形机器人（爆发性增长），阶梯式渗透。' },
+      { icon: '💰', label: '商业模式', content: '整手模组销售 + 行业定制方案 + 核心部件（关节/传感器）供应链合作，初期聚焦半导体大客户。' },
+      { icon: '👥', label: '团队', content: '需要机器人学博士级 + 精密制造经验 + 工业客户资源。机电软一体化——人才密度决定壁垒高度。' }
+    ]
+  },
+  // 精密仪器
+  precision_instrument: {
+    keywords: ['精密', '纳米', '测量', '定位', '平台', '干涉', '光谱', '校准', '检测', '仪器', '微纳'],
+    oneLiner: (term) => `"${term}"——在高端的"高端"里做尺子。一切芯片、光学、航天制造的上游标尺，精度每提升一个数量级，下游产业就多一层天花板。`,
+    scenarios: [
+      { title: '半导体光刻 & 检测', desc: 'EUV光刻机的纳米级对准、晶圆缺陷检测——没有精密仪器就没有先进制程，是半导体产业链的"卡脖子"环节。', market: '全球 ¥1.2万亿+' },
+      { title: '航空航天精密装配', desc: '航空发动机叶片微米级间隙控制、卫星光学镜面标定——任何误差都可能导致灾难性后果。', market: '全球 ¥1500亿+' },
+      { title: '生命科学 & 基因测序', desc: '单分子成像、纳米孔测序、冷冻电镜——精密仪器让人类"看见"生命的原子级结构。', market: '全球 ¥3000亿+' }
+    ],
+    pitch: [
+      { icon: '⚠️', label: '问题', content: '中国每年进口精密仪器超3000亿元，90%以上高端测量设备依赖进口，是制造业"皇冠上的缺口"。' },
+      { icon: '🔬', label: '技术壁垒', content: '亚纳米级运动控制、环境隔离（振动/温度/电磁）、校准溯源体系——每一项都是系统工程，非单点突破可解。' },
+      { icon: '🎯', label: '场景', content: '半导体量检测（最大市场）→ 高端数控机床（存量升级）→ 科仪/医疗影像（高附加值），沿精度需求递进。' },
+      { icon: '💰', label: '商业模式', content: '设备销售 + 年度校准服务（高粘性经常性收入） + 定制化产线集成。先做"能用"，再做"好用"，后做"离不开"。' },
+      { icon: '👥', label: '团队', content: '精密机械 + 光学 + 控制算法 + 计量学——典型的"长周期高壁垒"团队基因，需要学术大牛 + 产业老兵双驱动。' }
+    ]
+  },
+  // 智能制造/AI
+  smart_manufacturing: {
+    keywords: ['智能', 'AI', '人工智能', '机器学习', '视觉', '检测', '预测', '优化', '数字孪生', '工业互联网', '算法', '模型', '大脑'],
+    oneLiner: (term) => `"${term}"——把制造现场的海量数据变成实时决策，让产线拥有"自主思考"能力，从自动化走向智能化。`,
+    scenarios: [
+      { title: '工业视觉缺陷检测', desc: 'AI替代人工目检，毫秒级识别微米级缺陷，漏检率从5%降至0.1%以下，直接拉升良率与利润。', market: '全球 ¥800亿+' },
+      { title: '预测性维护 & 设备健康管理', desc: '通过振动/温度/电流数据预判设备故障，减少非计划停机40-60%，年省百万级维修成本。', market: '全球 ¥1200亿+' },
+      { title: '工艺参数自优化', desc: 'AI实时调优注塑/焊接/CNC参数，无需老师傅经验，良率提升3-8%，直接转化为利润增量。', market: '全球 ¥500亿+' }
+    ],
+    pitch: [
+      { icon: '⚠️', label: '问题', content: '制造业面临"老师傅退休=经验流失"困境。产线数据海量但无知——数据利用率不足5%，决策仍靠人拍脑袋。' },
+      { icon: '🔬', label: '技术壁垒', content: '工业场景数据噪声大、样本少（缺陷样本稀缺）、实时性要求高（毫秒级推理）——通用AI模型无法直接迁移。' },
+      { icon: '🎯', label: '场景', content: '视觉检测（标准化、收益明显）→ 预测维护（需要持续数据积累）→ 全流程自优化（终极目标），逐级解锁。' },
+      { icon: '💰', label: '商业模式', content: '软硬一体方案（AI模组 + 边缘计算盒）+ 按产线/按年订阅。先做单点突破（如检测），再做平台化延展。' },
+      { icon: '👥', label: '团队', content: 'AI算法 + 工业know-how + 现场工程落地——缺一不可。最佳配置：AI博士 + 资深工艺工程师 + 大客户BD。' }
+    ]
+  },
+  // 新材料
+  advanced_materials: {
+    keywords: ['材料', '液态金属', '柔性', '导电', '石墨烯', '碳纤维', '复合材料', '陶瓷', '合金', '涂层', '高分子'],
+    oneLiner: (term) => `"${term}"——材料是一切硬科技的物理载体。每突破一种核心材料，就解锁一个百亿级新市场。`,
+    scenarios: [
+      { title: '柔性电子 & 可穿戴', desc: '折叠屏手机、电子皮肤、柔性医疗贴片——让电子器件从"硬板"变"软膜"，颠覆消费电子形态。', market: '全球 ¥4000亿+' },
+      { title: '新能源 & 储能', desc: '固态电池电解质、钙钛矿光伏、氢能催化剂——新材料定义新能源的技术天花板。', market: '全球 ¥3万亿+' },
+      { title: '航空航天轻量化', desc: '碳纤维复材、耐高温涂层——每减重1公斤，火箭发射成本下降数万美元，是商业航天的"乘法器"。', market: '全球 ¥2000亿+' }
+    ],
+    pitch: [
+      { icon: '⚠️', label: '问题', content: '关键材料"卡脖子"——高端光刻胶、碳纤维原丝、高纯靶材等严重依赖进口，供应链安全存在系统性风险。' },
+      { icon: '🔬', label: '技术壁垒', content: '材料研发周期长（10年+）、试错成本高——核心在于"配方+工艺"的耦合优化，know-how极难逆向工程。' },
+      { icon: '🎯', label: '场景', content: '军工/航天（刚需）→ 高端制造（市场规模）→ 消费级（爆发力），按技术成熟度梯度释放商业价值。' },
+      { icon: '💰', label: '商业模式', content: '技术授权/IP许可 + 关键原料供应 + 联合实验室共建。初期绑定下游头部客户做标杆案例，建立信任壁垒。' },
+      { icon: '👥', label: '团队', content: '材料科学家（配方）+ 化学工程（量产）+ 产业资源（验证/导入）。产学研一体化是最优路径。' }
+    ]
+  }
+};
+
+// Default fallback
+const FALLBACK = {
+  oneLiner: (term) => `"${term}"——一项具有显著技术壁垒的硬科技创新，有望在关键应用场景中重塑行业格局，为早期投资者带来非对称回报机会。`,
+  scenarios: [
+    { title: '智能制造升级', desc: '通过技术赋能传统制造环节，提升效率、降低成本，切入千亿级存量市场。', market: '全球 ¥500亿+' },
+    { title: '新兴消费场景', desc: '将技术转化为消费级产品/服务，打开全新增量市场。', market: '全球 ¥300亿+' },
+    { title: '国防/航天/高端装备', desc: '在极端环境、高可靠性要求的场景中建立不可替代性。', market: '全球 ¥800亿+' }
+  ],
+  pitch: [
+    { icon: '⚠️', label: '问题', content: '现有方案在精度/效率/成本上存在明显瓶颈，行业痛点未被有效解决，存在结构性替代机会。' },
+    { icon: '🔬', label: '技术壁垒', content: '核心技术涉及多学科交叉，需要长时间积累和系统性突破，形成"时间+人才+数据"三重护城河。' },
+    { icon: '🎯', label: '场景', content: '从高价值、高痛点的利基市场切入（快速建立标杆），再向更大规模的主流市场横向扩张。' },
+    { icon: '💰', label: '商业模式', content: '初期以项目制/解决方案交付建立信任和现金流，中期转为标准化产品+订阅服务，后期构建生态平台。' },
+    { icon: '👥', label: '团队', content: '需要技术原创能力（学术/研发背景）+ 产业落地经验（工程化/供应链）+ 商业嗅觉（市场/融资）的黄金三角组合。' }
+  ]
+};
+
+// ============ Translation Engine ============
+function findBestMatch(term) {
+  const lower = term.toLowerCase();
+  let best = null;
+  let bestScore = 0;
+
+  for (const [key, domain] of Object.entries(KNOWLEDGE)) {
+    let score = 0;
+    for (const kw of domain.keywords) {
+      if (lower.includes(kw.toLowerCase())) score += kw.length;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = key;
+    }
+  }
+
+  return bestScore > 0 ? KNOWLEDGE[best] : null;
+}
+
+function translateBuiltin(term) {
+  const domain = findBestMatch(term);
+  if (domain) {
+    return {
+      oneLiner: domain.oneLiner(term),
+      scenarios: domain.scenarios,
+      pitch: domain.pitch
+    };
+  }
+  return {
+    oneLiner: FALLBACK.oneLiner(term),
+    scenarios: FALLBACK.scenarios,
+    pitch: FALLBACK.pitch
+  };
+}
+
+// ============ API Integration ============
+async function translateAPI(term) {
+  const endpoint = document.getElementById('apiEndpoint').value.trim();
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const model = document.getElementById('apiModel').value.trim();
+
+  if (!endpoint || !apiKey) {
+    throw new Error('请先在设置中配置 API Endpoint 和 Key');
+  }
+
+  const prompt = `你是一个顶级VC的分析师。现在有一个硬科技团队向你介绍一项技术："${term}"。
+
+请用中文输出以下内容，格式为JSON：
+
+{
+  "oneLiner": "一句话大白话价值翻译（让投资人秒懂这个技术为什么值钱，不要用技术术语，用商业语言，30字以内）",
+  "scenarios": [
+    {"title": "场景标题", "desc": "为什么这个技术在这个场景值钱（30-50字）", "market": "全球市场规模（带¥符号）"},
+    {"title": "场景标题", "desc": "...", "market": "..."},
+    {"title": "场景标题", "desc": "...", "market": "..."}
+  ],
+  "pitch": [
+    {"icon": "⚠️", "label": "问题", "content": "这个技术要解决的行业痛点（30字以内）"},
+    {"icon": "🔬", "label": "技术壁垒", "content": "为什么别人做不了（30字以内）"},
+    {"icon": "🎯", "label": "场景", "content": "市场切入路径（30字以内）"},
+    {"icon": "💰", "label": "商业模式", "content": "怎么赚钱（30字以内）"},
+    {"icon": "👥", "label": "团队", "content": "需要什么样的团队（30字以内）"}
+  ]
+}
+
+只输出JSON，不要任何其他文字。`;
+
+  const resp = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: model || 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.8,
+      max_tokens: 1500
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`API 请求失败 (${resp.status}): ${err.slice(0, 200)}`);
+  }
+
+  const data = await resp.json();
+  const content = data.choices?.[0]?.message?.content || '';
+  // Extract JSON from response
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('API 返回格式异常，请重试');
+
+  const result = JSON.parse(jsonMatch[0]);
+  return result;
+}
+
+// ============ Main Generate ============
+async function generate() {
+  const input = document.getElementById('techInput');
+  const term = input.value.trim();
+
+  if (!term) {
+    input.focus();
+    input.style.borderColor = 'var(--accent-rose)';
+    setTimeout(() => { input.style.borderColor = ''; }, 1500);
+    return;
+  }
+
+  const mode = document.getElementById('engineMode').value;
+  const loading = document.getElementById('loadingOverlay');
+  const results = document.getElementById('results');
+  const btn = document.getElementById('btnGenerate');
+
+  // Show loading
+  results.classList.remove('active');
+  loading.classList.add('active');
+  btn.disabled = true;
+
+  let data;
+  try {
+    if (mode === 'api') {
+      data = await translateAPI(term);
+    } else {
+      // Slight delay for builtin to show the "thinking" animation
+      await new Promise(r => setTimeout(r, 600));
+      data = translateBuiltin(term);
+    }
+  } catch (err) {
+    loading.classList.remove('active');
+    btn.disabled = false;
+    alert(`生成失败: ${err.message}`);
+    return;
+  }
+
+  // Render
+  renderResults(term, data);
+  loading.classList.remove('active');
+  results.classList.add('active');
+  btn.disabled = false;
+
+  // Scroll
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderResults(term, data) {
+  // One-liner
+  document.getElementById('oneLiner').innerHTML =
+    data.oneLiner.replace(term, `<span class="tech-name-highlight">${term}</span>`);
+
+  // Scenarios
+  const grid = document.getElementById('scenariosGrid');
+  grid.innerHTML = '';
+  data.scenarios.forEach((s, i) => {
+    grid.innerHTML += `
+      <div class="scenario-card anim-scale-in delay-${i + 1}">
+        <div class="sc-num">SCENARIO 0${i + 1}</div>
+        <div class="sc-title">${s.title}</div>
+        <div class="sc-desc">${s.desc}</div>
+        <span class="sc-market">${s.market}</span>
+      </div>`;
+  });
+
+  // Pitch structure
+  const flow = document.getElementById('pitchFlow');
+  flow.innerHTML = '';
+  data.pitch.forEach((p, i) => {
+    flow.innerHTML += `
+      <div class="pitch-step anim-fade-up delay-${i + 3}">
+        <div class="step-icon">${p.icon}</div>
+        <div class="step-label">${p.label}</div>
+        <div class="step-content">${p.content}</div>
+      </div>`;
+  });
+
+  // Re-trigger animations
+  document.querySelectorAll('.anim-fade-up, .anim-scale-in').forEach(el => {
+    el.style.animation = 'none';
+    el.offsetHeight; // reflow
+    el.style.animation = '';
+  });
+}
+
+// ============ Helpers ============
+function resetAll() {
+  document.getElementById('results').classList.remove('active');
+  document.getElementById('techInput').value = '';
+  document.getElementById('techInput').focus();
+}
+
+function copyContent(btn) {
+  const term = document.getElementById('techInput').value.trim();
+  const oneLiner = document.querySelector('.value-text')?.textContent || '';
+  const scenarios = Array.from(document.querySelectorAll('.scenario-card')).map(c => {
+    const title = c.querySelector('.sc-title')?.textContent || '';
+    const desc = c.querySelector('.sc-desc')?.textContent || '';
+    const market = c.querySelector('.sc-market')?.textContent || '';
+    return `- ${title}：${desc}（${market}）`;
+  }).join('\n');
+  const pitch = Array.from(document.querySelectorAll('.pitch-step')).map(s => {
+    const label = s.querySelector('.step-label')?.textContent || '';
+    const content = s.querySelector('.step-content')?.textContent || '';
+    return `【${label}】${content}`;
+  }).join('\n');
+
+  const text = `技术：${term}\n\n💡 一句话价值翻译\n${oneLiner}\n\n🎯 三大应用场景 & 市场规模\n${scenarios}\n\n📊 一页路演结构\n${pitch}`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✅ 已复制';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  });
+}
+
+function togglePresentation() {
+  document.body.classList.toggle('present-mode');
+}
+
+function toggleSettings() {
+  const panel = document.getElementById('settingsPanel');
+  panel.classList.toggle('active');
+}
+
+function onEngineChange() {
+  const mode = document.getElementById('engineMode').value;
+  document.getElementById('apiConfig').style.display = mode === 'api' ? 'block' : 'none';
+}
+
+// ============ Init ============
+document.addEventListener('DOMContentLoaded', () => {
+  // Quick tags
+  document.querySelectorAll('.quick-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      document.getElementById('techInput').value = tag.dataset.term;
+      generate();
+    });
+  });
+
+  // Enter key
+  document.getElementById('techInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') generate();
+  });
+
+  // Load saved settings
+  const savedEndpoint = localStorage.getItem('pitch_api_endpoint');
+  const savedKey = localStorage.getItem('pitch_api_key');
+  const savedModel = localStorage.getItem('pitch_api_model');
+  if (savedEndpoint) document.getElementById('apiEndpoint').value = savedEndpoint;
+  if (savedKey) document.getElementById('apiKey').value = savedKey;
+  if (savedModel) document.getElementById('apiModel').value = savedModel;
+
+  // Save settings on change
+  ['apiEndpoint', 'apiKey', 'apiModel'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+      localStorage.setItem('pitch_api_' + id.replace('api', '').toLowerCase(),
+        document.getElementById(id).value);
+    });
+  });
+
+  // Click outside to close settings
+  document.addEventListener('click', (e) => {
+    const panel = document.getElementById('settingsPanel');
+    const toggle = document.getElementById('settingsToggle');
+    if (panel.classList.contains('active') &&
+        !panel.contains(e.target) &&
+        !toggle.contains(e.target)) {
+      panel.classList.remove('active');
+    }
+  });
+
+  // Esc to exit presentation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('present-mode')) {
+      togglePresentation();
+    }
+  });
+});
+</script>
+</body>
+</html>

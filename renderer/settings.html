@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>设置 - 术语解释器</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #0f172a; color: #e2e8f0;
+  padding: 28px; min-height: 100vh;
+}
+h2 {
+  font-size: 1.25rem; font-weight: 700; margin-bottom: 4px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.subtitle {
+  font-size: 0.78rem; color: #64748b; margin-bottom: 22px;
+}
+.section {
+  margin-bottom: 20px;
+}
+.section-title {
+  font-size: 0.72rem; font-weight: 700; color: #6366f1;
+  letter-spacing: 0.06em; margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.form-group {
+  margin-bottom: 12px;
+}
+.form-group label {
+  display: block; font-size: 0.78rem; color: #94a3b8;
+  margin-bottom: 4px; font-weight: 500;
+}
+.form-group input {
+  width: 100%;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; color: #e2e8f0;
+  padding: 9px 12px; font-size: 0.83rem;
+  outline: none; font-family: inherit;
+  transition: border-color 0.2s;
+}
+.form-group input:focus {
+  border-color: #6366f1;
+}
+.form-group input::placeholder {
+  color: #475569; font-size: 0.76rem;
+}
+.hint {
+  font-size: 0.7rem; color: #475569; margin-top: 3px;
+}
+.actions {
+  display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap;
+}
+.btn {
+  padding: 8px 20px; border-radius: 8px;
+  font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  border: none; transition: all 0.2s;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+}
+.btn-primary:hover {
+  box-shadow: 0 4px 18px rgba(99,102,241,0.4);
+}
+.btn-primary:disabled {
+  opacity: 0.5; cursor: not-allowed;
+}
+.btn-secondary {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #94a3b8;
+}
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.1);
+  color: #e2e8f0;
+}
+.btn-warn {
+  background: rgba(239,68,68,0.15);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #f87171;
+}
+.btn-warn:hover {
+  background: rgba(239,68,68,0.25);
+}
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  padding: 8px 20px; border-radius: 8px;
+  font-size: 0.78rem; font-weight: 600;
+  opacity: 0; transition: opacity 0.3s;
+  pointer-events: none; z-index: 100;
+  max-width: 90%; text-align: center;
+}
+.toast.success {
+  background: rgba(16,185,129,0.2);
+  color: #34d399; opacity: 1;
+}
+.toast.error {
+  background: rgba(244,63,94,0.2);
+  color: #f43f5e; opacity: 1;
+}
+.toast.info {
+  background: rgba(99,102,241,0.2);
+  color: #818cf8; opacity: 1;
+}
+
+/* 诊断面板 */
+#diagnostic-panel {
+  display: none;
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+#diagnostic-panel h4 {
+  font-size: 0.78rem; color: #94a3b8; margin-bottom: 10px;
+}
+.diag-step {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 6px 0; font-size: 0.76rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.diag-step:last-child { border-bottom: none; }
+.diag-icon { font-size: 0.9rem; min-width: 18px; text-align: center; }
+.diag-icon.pass { color: #34d399; }
+.diag-icon.fail { color: #f43f5e; }
+.diag-icon.warn { color: #fbbf24; }
+.diag-detail { flex: 1; color: #cbd5e1; }
+.diag-detail .suggestion {
+  margin-top: 4px; padding: 6px 10px;
+  background: rgba(239,68,68,0.1);
+  border-left: 2px solid #f43f5e;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.72rem; color: #fca5a5;
+  white-space: pre-line; line-height: 1.6;
+}
+.diag-detail .suggestion.warn-bg {
+  background: rgba(251,191,36,0.1);
+  border-left-color: #fbbf24;
+  color: #fde68a;
+}
+
+/* 代理警告 */
+#proxy-warnings {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 8px;
+  font-size: 0.72rem; color: #fca5a5;
+  white-space: pre-line; line-height: 1.7;
+  display: none;
+}
+#proxy-warnings .warn-title {
+  font-weight: 700; font-size: 0.82rem; margin-bottom: 6px; color: #f87171;
+}
+
+/* 摘要 */
+#diag-summary {
+  margin-top: 12px; padding: 8px 12px;
+  border-radius: 6px; font-size: 0.78rem; font-weight: 600;
+  display: none;
+}
+#diag-summary.all-pass {
+  background: rgba(16,185,129,0.1);
+  color: #34d399;
+}
+#diag-summary.has-fail {
+  background: rgba(244,63,94,0.1);
+  color: #f87171;
+}
+</style>
+</head>
+<body>
+<h2>术语解释器设置</h2>
+<p class="subtitle">配置大模型 API，选中术语后用快捷键一键解释</p>
+
+<!-- API 配置 -->
+<div class="section">
+  <div class="section-title">API 配置</div>
+  <div class="form-group">
+    <label>base_url</label>
+    <input type="text" id="apiEndpoint" placeholder="https://api.minimaxi.com/v1">
+    <div class="hint">只需填基础路径，程序自动拼接 /chat/completions</div>
+  </div>
+  <div class="form-group">
+    <label>api_key</label>
+    <input type="password" id="apiKey" placeholder="&lt;YOUR_API_KEY&gt;">
+  </div>
+  <div class="form-group">
+    <label>model</label>
+    <input type="text" id="apiModel" placeholder="MiniMax-M3">
+    <div class="hint">如 gpt-4o-mini / deepseek-chat / qwen-turbo / glm-4-flash / MiniMax-M3</div>
+  </div>
+</div>
+
+<!-- 快捷键 -->
+<div class="section">
+  <div class="section-title">快捷键</div>
+  <div class="form-group">
+    <label>查询快捷键</label>
+    <input type="text" id="hotkey" placeholder="CommandOrControl+Shift+D" style="font-family: monospace;">
+    <div class="hint">Electron 快捷键格式。默认 Ctrl+Shift+D</div>
+  </div>
+  <div class="form-group">
+    <label>关闭弹窗按键</label>
+    <input type="text" id="cancelKey" placeholder="Escape" style="font-family: monospace;">
+    <div class="hint">默认 Escape。常用：Escape / F4 / Alt+F4</div>
+  </div>
+</div>
+
+<!-- 使用说明 -->
+<div class="section">
+  <div class="section-title">使用方式</div>
+  <div class="hint" style="line-height:1.7; margin-top:0;">
+    1. 在任意应用中<b style="color:#e2e8f0;">选中</b>需要解释的术语<br>
+    2. 按下 <b style="color:#818cf8;">Ctrl+Shift+D</b> 查询<br>
+    3. 三种解释：学术定义 + 两种通俗理解<br>
+    4. <b style="color:#e2e8f0;">点击卡片</b>可复制解释内容
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn btn-primary" onclick="saveAndTest()">保存并测试</button>
+  <button class="btn btn-secondary" onclick="runDiagnostic()">诊断网络</button>
+  <button class="btn btn-secondary" onclick="saveOnly()">仅保存</button>
+</div>
+
+<!-- 诊断面板 -->
+<div id="proxy-warnings"></div>
+<div id="diagnostic-panel">
+  <h4>网络诊断结果</h4>
+  <div id="diag-steps"></div>
+  <div id="diag-summary"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const api = window.electronAPI;
+
+async function loadSettings() {
+  const s = await api.getSettings();
+  document.getElementById('apiEndpoint').value = s.apiEndpoint || '';
+  document.getElementById('apiKey').value = s.apiKey || '';
+  document.getElementById('apiModel').value = s.apiModel || '';
+  document.getElementById('hotkey').value = s.hotkey || '';
+  document.getElementById('cancelKey').value = s.cancelKey || 'Escape';
+}
+loadSettings();
+
+function getFormData() {
+  return {
+    apiEndpoint: document.getElementById('apiEndpoint').value.trim(),
+    apiKey: document.getElementById('apiKey').value.trim(),
+    apiModel: document.getElementById('apiModel').value.trim() || 'gpt-4o-mini',
+    hotkey: document.getElementById('hotkey').value.trim() || 'CommandOrControl+Shift+D',
+    cancelKey: document.getElementById('cancelKey').value.trim() || 'Escape',
+  };
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  setTimeout(() => { t.className = 'toast'; }, 4000);
+}
+
+async function saveOnly() {
+  const data = getFormData();
+  if (!data.apiEndpoint || !data.apiKey) {
+    showToast('请填写 API Endpoint 和 Key', 'error');
+    return;
+  }
+  await api.saveSettings(data);
+  showToast('设置已保存', 'success');
+}
+
+async function saveAndTest() {
+  const data = getFormData();
+  if (!data.apiEndpoint || !data.apiKey) {
+    showToast('请填写 API Endpoint 和 Key', 'error');
+    return;
+  }
+  await api.saveSettings(data);
+
+  const btn = document.querySelector('.btn-primary');
+  const orig = btn.textContent;
+  btn.textContent = '测试中...';
+  btn.disabled = true;
+
+  try {
+    const result = await api.testApi(data);
+    if (result.success) {
+      showToast('连接成功！(' + result.model + ', ' + result.elapsed + 'ms)\n现在可在任意应用中选中术语，按 Ctrl+Shift+D 查询', 'success');
+    } else {
+      let msg = '测试失败: ' + (result.error || '未知错误');
+      if (result.suggestion === 'close_vpn') {
+        msg += '\n\n强烈建议：关闭 VPN 后重试！';
+      }
+      showToast(msg, 'error');
+    }
+  } catch (e) {
+    showToast('测试异常: ' + (e.message || ''), 'error');
+  }
+
+  btn.textContent = orig;
+  btn.disabled = false;
+}
+
+// ============ 网络诊断 ============
+async function runDiagnostic() {
+  const data = getFormData();
+  if (!data.apiEndpoint) {
+    showToast('请先填写 base_url', 'error');
+    return;
+  }
+
+  // 先保存设置，确保诊断用最新配置
+  await api.saveSettings(data);
+
+  const panel = document.getElementById('diagnostic-panel');
+  const stepsDiv = document.getElementById('diag-steps');
+  const summaryDiv = document.getElementById('diag-summary');
+  const proxyDiv = document.getElementById('proxy-warnings');
+
+  panel.style.display = 'block';
+  stepsDiv.innerHTML = '<div class="diag-step"><span class="diag-icon">⏳</span><span class="diag-detail">正在诊断...</span></div>';
+  summaryDiv.style.display = 'none';
+  proxyDiv.style.display = 'none';
+
+  const dbtn = document.querySelector('.btn-secondary:nth-child(2)');
+  const origText = dbtn.textContent;
+  dbtn.textContent = '诊断中...';
+  dbtn.disabled = true;
+
+  try {
+    const result = await api.diagnoseApi(data);
+
+    // 显示代理警告
+    if (result.proxyWarnings && result.proxyWarnings.length > 0) {
+      proxyDiv.style.display = 'block';
+      let html = '<div class="warn-title">检测到代理/VPN 环境变量</div>';
+      for (const w of result.proxyWarnings) {
+        html += w.detail.replace(/\n/g, '<br>') + '<br>';
+        html += '<br>' + (w.suggestion || '').replace(/\n/g, '<br>');
+      }
+      proxyDiv.innerHTML = html;
+    }
+
+    // 显示诊断步骤
+    stepsDiv.innerHTML = '';
+    for (const step of result.diagnostics) {
+      let icon, cls;
+      if (step.status === 'pass') { icon = '✓'; cls = 'pass'; }
+      else if (step.status === 'fail') { icon = '✗'; cls = 'fail'; }
+      else { icon = '!'; cls = 'warn'; }
+
+      let detailHtml = '<span class="diag-icon ' + cls + '">' + icon + '</span>';
+      detailHtml += '<span class="diag-detail">' + step.detail;
+      if (step.suggestion) {
+        detailHtml += '<div class="suggestion ' + (cls === 'warn' ? 'warn-bg' : '') + '">' + step.suggestion + '</div>';
+      }
+      detailHtml += '</span>';
+
+      const div = document.createElement('div');
+      div.className = 'diag-step';
+      div.innerHTML = detailHtml;
+      stepsDiv.appendChild(div);
+    }
+
+    // 显示摘要
+    if (result.summary) {
+      summaryDiv.style.display = 'block';
+      const hasFail = result.diagnostics.some(r => r.status === 'fail');
+      summaryDiv.className = hasFail ? 'has-fail' : 'all-pass';
+      summaryDiv.textContent = result.summary + '\n\n' +
+        (result.proxyWarnings?.length ? '→ 建议关闭 VPN 后重试' : '');
+    }
+
+    // 如果失败，额外弹出提示
+    const hasFail = result.diagnostics.some(r => r.status === 'fail');
+    if (hasFail) {
+      const failStep = result.diagnostics.find(r => r.status === 'fail');
+      showToast('诊断失败于 ' + failStep.step + ' — 请查看下方详情', 'error');
+    } else {
+      showToast('网络层面正常，可以测试 API 连通性', 'success');
+    }
+
+  } catch (e) {
+    stepsDiv.innerHTML = '<div class="diag-step"><span class="diag-icon fail">✗</span><span class="diag-detail">诊断出错: ' + (e.message || '') + '</span></div>';
+    showToast('诊断过程出错', 'error');
+  }
+
+  dbtn.textContent = origText;
+  dbtn.disabled = false;
+}
+</script>
+</body>
+</html>
