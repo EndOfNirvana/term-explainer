@@ -11,7 +11,6 @@ body {
   height: 100vh;
   user-select: none;
 }
-/* 外层容器 */
 .wrapper {
   margin: 8px;
   border-radius: 18px;
@@ -27,12 +26,15 @@ body {
   overflow: hidden;
   transition: border-color 0.3s;
 }
-/* 翻译模式主题 */
 .wrapper.translate-mode {
   border-color: rgba(16, 185, 129, 0.35);
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(16, 185, 129, 0.1) inset;
 }
-/* 顶部拖拽条 */
+.wrapper.scholar-mode {
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(59, 130, 246, 0.1) inset;
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -48,84 +50,46 @@ body {
   background: rgba(16, 185, 129, 0.08);
   border-bottom-color: rgba(16, 185, 129, 0.12);
 }
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.wrapper.scholar-mode .header {
+  background: rgba(59, 130, 246, 0.08);
+  border-bottom-color: rgba(59, 130, 246, 0.12);
 }
+.header-left { display: flex; align-items: center; gap: 10px; }
 .mode-tag {
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 10px;
-  letter-spacing: 0.04em;
+  font-size: 0.65rem; font-weight: 700;
+  padding: 2px 7px; border-radius: 10px; letter-spacing: 0.04em;
 }
-.mode-tag.explain-tag {
-  background: rgba(100, 116, 255, 0.2);
-  color: #818cf8;
-}
-.mode-tag.translate-tag {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
-}
+.mode-tag.explain-tag { background: rgba(100,116,255,0.2); color: #818cf8; }
+.mode-tag.translate-tag { background: rgba(16,185,129,0.2); color: #34d399; }
+.mode-tag.scholar-tag { background: rgba(59,130,246,0.2); color: #60a5fa; }
 .header-badge {
-  font-size: 0.72rem;
-  color: #818cf8;
-  background: rgba(100, 116, 255, 0.15);
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-weight: 600;
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.72rem; color: #818cf8;
+  background: rgba(100,116,255,0.15);
+  padding: 3px 10px; border-radius: 20px; font-weight: 600;
+  max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.wrapper.translate-mode .header-badge {
-  color: #34d399;
-  background: rgba(16, 185, 129, 0.15);
-}
-.header-actions {
-  display: flex;
-  gap: 6px;
-  -webkit-app-region: no-drag;
-}
+.wrapper.translate-mode .header-badge { color: #34d399; background: rgba(16,185,129,0.15); }
+.wrapper.scholar-mode .header-badge { color: #60a5fa; background: rgba(59,130,246,0.15); }
+.header-actions { display: flex; gap: 6px; -webkit-app-region: no-drag; }
 .btn-header {
-  width: 30px; height: 30px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(100, 116, 255, 0.12);
-  color: #94a3b8;
-  transition: all 0.15s;
+  width: 30px; height: 30px; border-radius: 8px; border: none; cursor: pointer;
+  font-size: 0.85rem; display: flex; align-items: center; justify-content: center;
+  background: rgba(100,116,255,0.12); color: #94a3b8; transition: all 0.15s;
 }
-.btn-header:hover { background: rgba(100, 116, 255, 0.25); color: #e2e8f0; }
-.btn-header.close:hover { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
+.btn-header:hover { background: rgba(100,116,255,0.25); color: #e2e8f0; }
+.btn-header.close:hover { background: rgba(239,68,68,0.3); color: #fca5a5; }
 
-/* 滚动内容区 */
 .content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex: 1; overflow-y: auto; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 10px;
 }
 .content::-webkit-scrollbar { width: 4px; }
 .content::-webkit-scrollbar-track { background: transparent; }
 .content::-webkit-scrollbar-thumb { background: rgba(100,116,255,0.2); border-radius: 2px; }
 
-/* 加载状态 */
 .loading {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
 }
 .spinner {
   width: 36px; height: 36px;
@@ -134,136 +98,117 @@ body {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
-.wrapper.translate-mode .spinner {
-  border-color: rgba(16,185,129,0.2);
-  border-top-color: #34d399;
-}
+.wrapper.translate-mode .spinner { border-color: rgba(16,185,129,0.2); border-top-color: #34d399; }
+.wrapper.scholar-mode .spinner { border-color: rgba(59,130,246,0.2); border-top-color: #60a5fa; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-text { font-size: 0.82rem; color: #64748b; }
 
-/* 卡片 */
 .card {
-  background: rgba(100, 116, 255, 0.06);
-  border: 1px solid rgba(100, 116, 255, 0.15);
-  border-radius: 12px;
-  padding: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
+  background: rgba(100,116,255,0.06);
+  border: 1px solid rgba(100,116,255,0.15);
+  border-radius: 12px; padding: 14px;
+  cursor: pointer; transition: all 0.2s;
+  position: relative; overflow: hidden;
 }
 .card:hover {
-  background: rgba(100, 116, 255, 0.12);
-  border-color: rgba(100, 116, 255, 0.35);
+  background: rgba(100,116,255,0.12);
+  border-color: rgba(100,116,255,0.35);
   transform: translateX(2px);
 }
 .card:hover .copy-hint { opacity: 1; }
-/* 翻译卡片颜色 */
 .card.translate-card {
-  background: rgba(16, 185, 129, 0.07);
-  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(16,185,129,0.07); border-color: rgba(16,185,129,0.2);
 }
 .card.translate-card:hover {
-  background: rgba(16, 185, 129, 0.13);
-  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16,185,129,0.13); border-color: rgba(16,185,129,0.4);
 }
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
+.card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .card-icon {
-  width: 28px; height: 28px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
 }
-.card-icon.trans { background: rgba(16, 185, 129, 0.25); }
-.card-icon.def   { background: rgba(99, 102, 241, 0.2); }
-.card-icon.p1    { background: rgba(34, 197, 94, 0.2); }
-.card-icon.p2    { background: rgba(245, 158, 11, 0.2); }
+.card-icon.trans { background: rgba(16,185,129,0.25); }
+.card-icon.def   { background: rgba(99,102,241,0.2); }
+.card-icon.p1    { background: rgba(34,197,94,0.2); }
+.card-icon.p2    { background: rgba(245,158,11,0.2); }
 .card-title {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.75rem; color: #94a3b8; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
 }
 .card.translate-card .card-title { color: #6ee7b7; }
-.card-body {
-  font-size: 0.84rem;
-  line-height: 1.55;
-  color: #cbd5e1;
-}
+.card-body { font-size: 0.84rem; line-height: 1.55; color: #cbd5e1; }
 .copy-hint {
-  position: absolute;
-  top: 10px; right: 12px;
-  font-size: 0.65rem;
-  color: #818cf8;
-  opacity: 0;
-  transition: opacity 0.2s;
+  position: absolute; top: 10px; right: 12px; font-size: 0.65rem;
+  color: #818cf8; opacity: 0; transition: opacity 0.2s;
 }
 
-/* 输入区 */
+/* 文献卡片 */
+.ref-section {
+  margin-top: 4px;
+}
+.ref-title {
+  font-size: 0.7rem; color: #64748b; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 0 4px 6px 4px;
+}
+.ref-card {
+  background: rgba(59,130,246,0.05);
+  border: 1px solid rgba(59,130,246,0.12);
+  border-radius: 10px; padding: 12px 14px;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; flex-direction: column; gap: 6px;
+  margin-bottom: 8px;
+}
+.ref-card:hover {
+  background: rgba(59,130,246,0.1);
+  border-color: rgba(59,130,246,0.3);
+  transform: translateX(2px);
+}
+.ref-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.ref-card-title {
+  font-size: 0.8rem; color: #e2e8f0; font-weight: 500;
+  line-height: 1.35; flex: 1;
+}
+.ref-source-tag {
+  font-size: 0.6rem; font-weight: 600; white-space: nowrap;
+  padding: 2px 6px; border-radius: 6px;
+  background: rgba(59,130,246,0.15); color: #60a5fa;
+}
+.ref-card-meta {
+  font-size: 0.68rem; color: #64748b;
+  display: flex; gap: 12px;
+}
+.ref-card-url {
+  font-size: 0.66rem; color: #60a5fa;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
 .input-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  gap: 14px;
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 20px; gap: 14px;
 }
-.input-section .prompt {
-  font-size: 0.8rem;
-  color: #64748b;
-  text-align: center;
-}
-.input-row {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
+.input-section .prompt { font-size: 0.8rem; color: #64748b; text-align: center; }
+.input-row { display: flex; gap: 8px; width: 100%; }
 .input-row input {
-  flex: 1;
-  padding: 10px 14px;
-  border-radius: 10px;
+  flex: 1; padding: 10px 14px; border-radius: 10px;
   border: 1px solid rgba(100,116,255,0.3);
-  background: rgba(15,18,28,0.8);
-  color: #e2e8f0;
-  font-size: 0.9rem;
-  outline: none;
+  background: rgba(15,18,28,0.8); color: #e2e8f0; font-size: 0.9rem; outline: none;
 }
 .input-row input:focus { border-color: #818cf8; }
 .wrapper.translate-mode .input-row input:focus { border-color: #34d399; }
+.wrapper.scholar-mode .input-row input:focus { border-color: #60a5fa; }
 .input-row button {
-  padding: 10px 20px;
-  border-radius: 10px;
-  border: none;
+  padding: 10px 20px; border-radius: 10px; border: none;
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+  color: white; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
 }
-.wrapper.translate-mode .input-row button {
-  background: linear-gradient(135deg, #059669, #10b981);
-}
+.wrapper.translate-mode .input-row button { background: linear-gradient(135deg, #059669, #10b981); }
+.wrapper.scholar-mode .input-row button { background: linear-gradient(135deg, #2563eb, #3b82f6); }
 .input-row button:hover { opacity: 0.9; transform: scale(1.02); }
 
-/* 错误状态 */
 .error-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 20px;
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px; padding: 20px;
 }
 .error-msg { font-size: 0.85rem; color: #f87171; text-align: center; }
 .error-hint { font-size: 0.72rem; color: #64748b; text-align: center; line-height: 1.5; }
@@ -272,7 +217,6 @@ body {
 <body>
 
 <div class="wrapper" id="wrapper">
-  <!-- 顶部拖拽条 -->
   <div class="header">
     <div class="header-left">
       <span id="headerIcon" style="font-size:0.9rem;">🔍</span>
@@ -284,15 +228,12 @@ body {
     </div>
   </div>
 
-  <!-- 内容区 -->
   <div class="content" id="contentArea">
-    <!-- 加载状态 -->
     <div class="loading" id="loadingState">
       <div class="spinner"></div>
       <div class="loading-text" id="loadingText">正在查询「<b id="loadingTerm"></b>」...</div>
     </div>
 
-    <!-- 输入区（无选中文本时） -->
     <div class="input-section" id="inputState" style="display:none;">
       <div class="prompt" id="inputPrompt">未检测到选中文本<br>请手动输入</div>
       <div class="input-row">
@@ -301,73 +242,74 @@ body {
       </div>
     </div>
 
-    <!-- 错误 -->
     <div class="error-section" id="errorState" style="display:none;">
       <div class="error-msg" id="errorMsg"></div>
       <div class="error-hint" id="errorHint"></div>
     </div>
 
-    <!-- 解释结果（原术语解释模式） -->
+    <!-- 解释结果 -->
     <div id="resultExplain" style="display:none;flex-direction:column;gap:10px;">
       <div class="card" id="cardDef" onclick="copyCard(this)">
-        <div class="card-header">
-          <div class="card-icon def">📖</div>
-          <div class="card-title">学术定义</div>
-        </div>
+        <div class="card-header"><div class="card-icon def">📖</div><div class="card-title">学术定义</div></div>
         <div class="card-body" id="contentDef"></div>
         <div class="copy-hint">点击复制</div>
       </div>
       <div class="card" id="cardPlain1" onclick="copyCard(this)">
-        <div class="card-header">
-          <div class="card-icon p1">💡</div>
-          <div class="card-title">通俗理解 ①</div>
-        </div>
+        <div class="card-header"><div class="card-icon p1">💡</div><div class="card-title">通俗理解 ①</div></div>
         <div class="card-body" id="contentPlain1"></div>
         <div class="copy-hint">点击复制</div>
       </div>
       <div class="card" id="cardPlain2" onclick="copyCard(this)">
-        <div class="card-header">
-          <div class="card-icon p2">💡</div>
-          <div class="card-title">通俗理解 ②</div>
-        </div>
+        <div class="card-header"><div class="card-icon p2">💡</div><div class="card-title">通俗理解 ②</div></div>
         <div class="card-body" id="contentPlain2"></div>
         <div class="copy-hint">点击复制</div>
       </div>
     </div>
 
-    <!-- 翻译结果（翻译模式，多一张翻译卡） -->
+    <!-- 翻译结果 -->
     <div id="resultTranslate" style="display:none;flex-direction:column;gap:10px;">
       <div class="card translate-card" id="cardTranslation" onclick="copyCard(this)">
-        <div class="card-header">
-          <div class="card-icon trans">🌐</div>
-          <div class="card-title">中文翻译</div>
-        </div>
+        <div class="card-header"><div class="card-icon trans">🌐</div><div class="card-title">中文翻译</div></div>
         <div class="card-body" id="contentTranslation"></div>
         <div class="copy-hint">点击复制</div>
       </div>
       <div class="card" id="cardDefT" onclick="copyCard(this)">
-        <div class="card-header">
-          <div class="card-icon def">📖</div>
-          <div class="card-title">学术定义</div>
-        </div>
+        <div class="card-header"><div class="card-icon def">📖</div><div class="card-title">学术定义</div></div>
         <div class="card-body" id="contentDefT"></div>
         <div class="copy-hint">点击复制</div>
       </div>
       <div class="card" id="cardPlain1T" onclick="copyCard(this)">
-        <div class="card-header">
-          <div class="card-icon p1">💡</div>
-          <div class="card-title">通俗理解 ①</div>
-        </div>
+        <div class="card-header"><div class="card-icon p1">💡</div><div class="card-title">通俗理解 ①</div></div>
         <div class="card-body" id="contentPlain1T"></div>
         <div class="copy-hint">点击复制</div>
       </div>
       <div class="card" id="cardPlain2T" onclick="copyCard(this)">
-        <div class="card-header">
-          <div class="card-icon p2">💡</div>
-          <div class="card-title">通俗理解 ②</div>
-        </div>
+        <div class="card-header"><div class="card-icon p2">💡</div><div class="card-title">通俗理解 ②</div></div>
         <div class="card-body" id="contentPlain2T"></div>
         <div class="copy-hint">点击复制</div>
+      </div>
+    </div>
+
+    <!-- 学术模式结果（解释 + 文献） -->
+    <div id="resultScholar" style="display:none;flex-direction:column;gap:10px;">
+      <div class="card" id="cardDefS" onclick="copyCard(this)">
+        <div class="card-header"><div class="card-icon def">📖</div><div class="card-title">学术定义</div></div>
+        <div class="card-body" id="contentDefS"></div>
+        <div class="copy-hint">点击复制</div>
+      </div>
+      <div class="card" id="cardPlain1S" onclick="copyCard(this)">
+        <div class="card-header"><div class="card-icon p1">💡</div><div class="card-title">通俗理解 ①</div></div>
+        <div class="card-body" id="contentPlain1S"></div>
+        <div class="copy-hint">点击复制</div>
+      </div>
+      <div class="card" id="cardPlain2S" onclick="copyCard(this)">
+        <div class="card-header"><div class="card-icon p2">💡</div><div class="card-title">通俗理解 ②</div></div>
+        <div class="card-body" id="contentPlain2S"></div>
+        <div class="copy-hint">点击复制</div>
+      </div>
+      <div class="ref-section" id="refSection">
+        <div class="ref-title">📚 相关文献</div>
+        <div id="refCards"></div>
       </div>
     </div>
   </div>
@@ -375,55 +317,58 @@ body {
 
 <script>
 const api = window.electronAPI;
-let currentMode = 'explain'; // 'explain' | 'translate'
+let currentMode = 'explain';
 
-// ===== 模式切换 =====
 function setMode(mode) {
   currentMode = mode;
-  const wrapper = document.getElementById('wrapper');
-  const modeTag = document.getElementById('modeTag');
-  const headerIcon = document.getElementById('headerIcon');
-  const loadingText = document.getElementById('loadingText');
+  var w = document.getElementById('wrapper');
+  var tag = document.getElementById('modeTag');
+  var icon = document.getElementById('headerIcon');
+  var lt = document.getElementById('loadingText');
+  var btn = document.getElementById('queryBtn');
+  var prompt = document.getElementById('inputPrompt');
+
+  w.classList.remove('translate-mode', 'scholar-mode');
 
   if (mode === 'translate') {
-    wrapper.classList.add('translate-mode');
-    modeTag.textContent = '翻译';
-    modeTag.className = 'mode-tag translate-tag';
-    headerIcon.textContent = '🌐';
-    loadingText.innerHTML = '正在翻译「<b id="loadingTerm"></b>」...';
-    document.getElementById('inputPrompt').innerHTML = '未检测到选中文本<br>请手动输入要翻译的内容';
-    document.getElementById('queryBtn').textContent = '🌐 翻译';
+    w.classList.add('translate-mode');
+    tag.textContent = '翻译'; tag.className = 'mode-tag translate-tag';
+    icon.textContent = '🌐';
+    lt.innerHTML = '正在翻译「<b id="loadingTerm"></b>」...';
+    prompt.innerHTML = '未检测到选中文本<br>请手动输入要翻译的内容';
+    btn.textContent = '🌐 翻译';
+  } else if (mode === 'scholar') {
+    w.classList.add('scholar-mode');
+    tag.textContent = '学术'; tag.className = 'mode-tag scholar-tag';
+    icon.textContent = '📚';
+    lt.innerHTML = '正在检索「<b id="loadingTerm"></b>」...';
+    prompt.innerHTML = '未检测到选中文本<br>请手动输入学术术语';
+    btn.textContent = '📚 检索';
   } else {
-    wrapper.classList.remove('translate-mode');
-    modeTag.textContent = '解释';
-    modeTag.className = 'mode-tag explain-tag';
-    headerIcon.textContent = '🔍';
-    loadingText.innerHTML = '正在解释「<b id="loadingTerm"></b>」...';
-    document.getElementById('inputPrompt').innerHTML = '未检测到选中文本<br>请手动输入术语';
-    document.getElementById('queryBtn').textContent = '⚡ 解释';
+    tag.textContent = '解释'; tag.className = 'mode-tag explain-tag';
+    icon.textContent = '🔍';
+    lt.innerHTML = '正在解释「<b id="loadingTerm"></b>」...';
+    prompt.innerHTML = '未检测到选中文本<br>请手动输入术语';
+    btn.textContent = '⚡ 解释';
   }
 }
 
-// ===== 状态管理 =====
 function showOnly(id) {
-  ['loadingState','inputState','errorState','resultExplain','resultTranslate'].forEach(x => {
-    const el = document.getElementById(x);
-    if (el) el.style.display = 'none';
+  ['loadingState','inputState','errorState','resultExplain','resultTranslate','resultScholar'].forEach(function(x) {
+    var el = document.getElementById(x); if (el) el.style.display = 'none';
   });
-  const el = document.getElementById(id);
-  if (el) el.style.display = 'flex';
+  var el = document.getElementById(id); if (el) el.style.display = 'flex';
 }
 
 function showLoading(term) {
   showOnly('loadingState');
-  const lt = document.getElementById('loadingTerm');
-  if (lt) lt.textContent = term;
+  var lt = document.getElementById('loadingTerm'); if (lt) lt.textContent = term;
   document.getElementById('headerBadge').textContent = term;
 }
 
 function showInput() {
   showOnly('inputState');
-  setTimeout(() => document.getElementById('manualInput').focus(), 50);
+  setTimeout(function() { document.getElementById('manualInput').focus(); }, 50);
 }
 
 function showError(msg, hint) {
@@ -449,37 +394,78 @@ function showResultTranslate(term, data) {
   document.getElementById('contentPlain2T').textContent = data.plain2 || '(无)';
 }
 
-// ===== 复制 =====
+function showResultScholar(term, data, refs) {
+  showOnly('resultScholar');
+  document.getElementById('headerBadge').textContent = term;
+  document.getElementById('contentDefS').textContent = data.definition || '(无)';
+  document.getElementById('contentPlain1S').textContent = data.plain1 || '(无)';
+  document.getElementById('contentPlain2S').textContent = data.plain2 || '(无)';
+
+  var refCardsEl = document.getElementById('refCards');
+  refCardsEl.innerHTML = '';
+
+  if (!refs || refs.length === 0) {
+    refCardsEl.innerHTML = '<div style="font-size:0.72rem;color:#64748b;padding:4px;">暂未找到相关文献</div>';
+    return;
+  }
+
+  refs.forEach(function(ref) {
+    var html = '<div class="ref-card" onclick="openRef(\'' + escAttr(ref.url) + '\')">';
+    html += '<div class="ref-card-top">';
+    html += '<div class="ref-card-title">' + escHtml(ref.title || '(无标题)') + '</div>';
+    html += '<span class="ref-source-tag">' + escHtml(ref.source || '') + '</span>';
+    html += '</div>';
+    html += '<div class="ref-card-meta">';
+    if (ref.authors) html += '<span>' + escHtml(ref.authors) + '</span>';
+    if (ref.year) html += '<span>' + escHtml(String(ref.year)) + '</span>';
+    html += '</div>';
+    if (ref.url) html += '<div class="ref-card-url">' + escHtml(ref.url) + '</div>';
+    html += '</div>';
+    refCardsEl.innerHTML += html;
+  });
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function openRef(url) {
+  if (url) { window.open(url, '_blank'); }
+}
+
 function copyCard(card) {
-  const body = card.querySelector('.card-body');
+  var body = card.querySelector('.card-body');
   if (body) {
-    navigator.clipboard.writeText(body.textContent).then(() => {
-      const hint = card.querySelector('.copy-hint');
-      if (hint) {
-        hint.textContent = '✅ 已复制';
-        hint.style.opacity = '1';
-        setTimeout(() => { hint.textContent = '点击复制'; hint.style.opacity = ''; }, 1500);
-      }
+    navigator.clipboard.writeText(body.textContent).then(function() {
+      var hint = card.querySelector('.copy-hint');
+      if (hint) { hint.textContent = '✅ 已复制'; hint.style.opacity = '1';
+        setTimeout(function() { hint.textContent = '点击复制'; hint.style.opacity = ''; }, 1500); }
     });
   }
 }
 
-// ===== 手动查询 =====
 async function manualQuery() {
-  const term = document.getElementById('manualInput').value.trim();
+  var term = document.getElementById('manualInput').value.trim();
   if (!term) return;
   await doQuery(term);
 }
 
-// ===== AI 查询 =====
 async function doQuery(term) {
   showLoading(term);
 
   try {
-    let result;
+    var result;
 
     if (currentMode === 'translate') {
       result = await api.callLLMTranslate(term);
+    } else if (currentMode === 'scholar') {
+      result = await api.callLLMScholar(term);
     } else {
       result = await api.callLLM(term);
     }
@@ -489,34 +475,45 @@ async function doQuery(term) {
       return;
     }
 
+    if (currentMode === 'scholar') {
+      var scholarData = result.data;
+      if (!scholarData) {
+        if (result.rawContent) {
+          scholarData = fallbackParseExplain(result.rawContent);
+        } else {
+          showError('API 返回异常', '模型未返回有效内容');
+          return;
+        }
+      }
+      showResultScholar(term, scholarData, result.references || []);
+      return;
+    }
+
     if (currentMode === 'translate') {
       if (result.data) {
         showResultTranslate(term, result.data);
       } else if (result.rawContent) {
-        const fallback = fallbackParseTranslate(result.rawContent);
-        showResultTranslate(term, fallback);
+        showResultTranslate(term, fallbackParseTranslate(result.rawContent));
       } else {
-        showError('API 返回异常', '模型未返回有效内容，请重试');
+        showError('API 返回异常', '模型未返回有效内容');
       }
     } else {
       if (result.data) {
         showResultExplain(term, result.data);
       } else if (result.rawContent) {
-        const fallback = fallbackParseExplain(result.rawContent);
-        showResultExplain(term, fallback);
+        showResultExplain(term, fallbackParseExplain(result.rawContent));
       } else {
-        showError('API 返回异常', '模型未返回有效内容，请重试');
+        showError('API 返回异常', '模型未返回有效内容');
       }
     }
 
   } catch (e) {
-    showError('查询异常', e.message?.slice(0, 100) || '未知错误');
+    showError('查询异常', (e.message || '').slice(0, 100) || '未知错误');
   }
 }
 
-// ===== 降级解析 =====
 function fallbackParseExplain(content) {
-  const parts = content.split(/\n{2,}/).filter(p => p.trim().length > 5);
+  var parts = content.split(/\n{2,}/).filter(function(p) { return p.trim().length > 5; });
   return {
     definition: parts[0]?.trim() || content.slice(0, 200),
     plain1: parts[1]?.trim() || '解析失败，请重试',
@@ -525,7 +522,7 @@ function fallbackParseExplain(content) {
 }
 
 function fallbackParseTranslate(content) {
-  const parts = content.split(/\n{2,}/).filter(p => p.trim().length > 3);
+  var parts = content.split(/\n{2,}/).filter(function(p) { return p.trim().length > 3; });
   return {
     translation: parts[0]?.trim() || content.slice(0, 100),
     definition: parts[1]?.trim() || '解析失败，请重试',
@@ -534,47 +531,29 @@ function fallbackParseTranslate(content) {
   };
 }
 
-// ===== 快捷键 =====
-let cancelKey = 'Escape';
+var cancelKey = 'Escape';
+api.onConfigCancelKey(function(key) { if (key && key.trim()) cancelKey = key.trim(); });
 
-api.onConfigCancelKey((key) => {
-  if (key && key.trim()) cancelKey = key.trim();
-});
-
-document.addEventListener('keydown', (e) => {
-  const configuredKey = normalizeKey(cancelKey);
-  const pressedKey = normalizeKey(e.key);
-  if (pressedKey === configuredKey) {
-    api.closePopup();
-  }
+document.addEventListener('keydown', function(e) {
+  var configuredKey = normalizeKey(cancelKey);
+  var pressedKey = normalizeKey(e.key);
+  if (pressedKey === configuredKey) { api.closePopup(); }
   if (e.key === 'Enter' && document.getElementById('inputState').style.display !== 'none') {
     manualQuery();
   }
 });
 
-function normalizeKey(key) {
-  return key.toLowerCase().replace(/\s/g, '');
-}
+function normalizeKey(key) { return key.toLowerCase().replace(/\s/g, ''); }
 
-// ===== 初始化（接收 mode 和 term）=====
-api.onInitTerm((payload) => {
-  // payload 可能是 { term, mode } 或直接是字符串（兼容旧版）
-  let term, mode;
-  if (typeof payload === 'string') {
-    term = payload;
-    mode = 'explain';
-  } else {
-    term = payload.term || '';
-    mode = payload.mode || 'explain';
-  }
+api.onInitTerm(function(payload) {
+  var term, mode;
+  if (typeof payload === 'string') { term = payload; mode = 'explain'; }
+  else { term = payload.term || ''; mode = payload.mode || 'explain'; }
 
   setMode(mode);
 
-  if (term && term.trim()) {
-    doQuery(term.trim());
-  } else {
-    showInput();
-  }
+  if (term && term.trim()) { doQuery(term.trim()); }
+  else { showInput(); }
 });
 </script>
 </body>

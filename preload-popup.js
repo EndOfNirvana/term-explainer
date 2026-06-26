@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   testApi: (data) => ipcRenderer.invoke('test-api', data),
   callLLM: (term) => ipcRenderer.invoke('call-llm', term),
   callLLMTranslate: (term) => ipcRenderer.invoke('call-llm-translate', term),
+  callLLMScholar: (term) => ipcRenderer.invoke('call-llm-scholar', term),
   closePopup: () => ipcRenderer.send('close-popup'),
   closeAllPopups: () => ipcRenderer.send('close-all-popups'),
   onInitTerm: (callback) => ipcRenderer.on('init-term', (_, payload) => callback(payload)),

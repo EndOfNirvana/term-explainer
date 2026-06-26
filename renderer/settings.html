@@ -216,6 +216,11 @@ h2 {
     <div class="hint">选中英文后按此键，弹出中文翻译 + 三种解释。默认 Ctrl+Shift+T</div>
   </div>
   <div class="form-group">
+    <label>学术检索快捷键</label>
+    <input type="text" id="scholarHotkey" placeholder="CommandOrControl+Shift+S" style="font-family: monospace;">
+    <div class="hint">选中术语后按此键，弹出解释 + Semantic Scholar / OpenAlex 文献链接。默认 Ctrl+Shift+S</div>
+  </div>
+  <div class="form-group">
     <label>关闭弹窗按键</label>
     <input type="text" id="cancelKey" placeholder="Escape" style="font-family: monospace;">
     <div class="hint">默认 Escape。常用：Escape / F4 / Alt+F4</div>
@@ -230,6 +235,9 @@ h2 {
     &nbsp;&nbsp;&nbsp;选中任意术语 → 按快捷键 → 学术定义 + 两种通俗解释<br><br>
     🌐 <b style="color:#e2e8f0;">翻译模式</b>（默认 <b style="color:#34d399;">Ctrl+Shift+T</b>）<br>
     &nbsp;&nbsp;&nbsp;选中英文词语/句子 → 按快捷键 → 中文翻译 + 学术定义 + 两种通俗解释<br><br>
+    📚 <b style="color:#e2e8f0;">学术模式</b>（默认 <b style="color:#60a5fa;">Ctrl+Shift+S</b>）<br>
+    &nbsp;&nbsp;&nbsp;选中学术术语 → 按快捷键 → 学术定义 + 两种通俗解释 + 文献链接<br>
+    &nbsp;&nbsp;&nbsp;文献来自 Semantic Scholar 和 OpenAlex 数据库<br><br>
     点击弹窗中任意卡片可复制内容
   </div>
 </div>
@@ -260,6 +268,7 @@ async function loadSettings() {
   document.getElementById('apiModel').value = s.apiModel || '';
   document.getElementById('hotkey').value = s.hotkey || '';
   document.getElementById('translateHotkey').value = s.translateHotkey || '';
+  document.getElementById('scholarHotkey').value = s.scholarHotkey || '';
   document.getElementById('cancelKey').value = s.cancelKey || 'Escape';
 }
 loadSettings();
@@ -271,6 +280,7 @@ function getFormData() {
     apiModel: document.getElementById('apiModel').value.trim() || 'gpt-4o-mini',
     hotkey: document.getElementById('hotkey').value.trim() || 'CommandOrControl+Shift+D',
     translateHotkey: document.getElementById('translateHotkey').value.trim() || 'CommandOrControl+Shift+T',
+    scholarHotkey: document.getElementById('scholarHotkey').value.trim() || 'CommandOrControl+Shift+S',
     cancelKey: document.getElementById('cancelKey').value.trim() || 'Escape',
   };
 }

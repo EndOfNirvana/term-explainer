@@ -15,6 +15,7 @@ const { URL } = require('url');
 const DEFAULT_CONFIG = {
   hotkey: 'CommandOrControl+Shift+D',
   translateHotkey: 'CommandOrControl+Shift+T',
+  scholarHotkey: 'CommandOrControl+Shift+S',
   cancelKey: 'Escape',
   apiEndpoint: '',
   apiKey: '',
@@ -27,6 +28,7 @@ let settingsWindow = null;
 let popupWindows = [];
 let currentHotkey = DEFAULT_CONFIG.hotkey;
 let currentTranslateHotkey = DEFAULT_CONFIG.translateHotkey;
+let currentScholarHotkey = DEFAULT_CONFIG.scholarHotkey;
 let isQuitting = false;
 
 // ============ 配置存储 ============
@@ -323,7 +325,22 @@ async function handleTranslateShortcut() {
   createPopupWindow(term, 'translate');
 }
 
-function registerHotkey(hotkey, translateHotkey) {
+async function handleScholarShortcut() {
+  if (settingsWindow && settingsWindow.isFocused()) {
+    return;
+  }
+
+  const term = await getSelectedText();
+
+  if (!term) {
+    createPopupWindow('', 'scholar');
+    return;
+  }
+
+  createPopupWindow(term, 'scholar');
+}
+
+function registerHotkey(hotkey, translateHotkey, scholarHotkey) {
   try {
     globalShortcut.unregisterAll();
   } catch(e) {}
@@ -352,6 +369,18 @@ function registerHotkey(hotkey, translateHotkey) {
       console.log('Translate hotkey registered:', thk);
     } else {
       console.error('Failed to register translate hotkey:', thk);
+    }
+  }
+
+  // 注册学术模式快捷键
+  const shk = scholarHotkey || currentScholarHotkey;
+  if (shk && shk !== hk && shk !== thk) {
+    const success3 = globalShortcut.register(shk, handleScholarShortcut);
+    if (success3) {
+      currentScholarHotkey = shk;
+      console.log('Scholar hotkey registered:', shk);
+    } else {
+      console.error('Failed to register scholar hotkey:', shk);
     }
   }
 
@@ -415,6 +444,11 @@ function createTray() {
       label: '🌐 翻译选中文本',
       accelerator: currentTranslateHotkey,
       click: () => handleTranslateShortcut()
+    },
+    {
+      label: '📚 学术检索',
+      accelerator: currentScholarHotkey,
+      click: () => handleScholarShortcut()
     },
     { type: 'separator' },
     {
@@ -925,6 +959,134 @@ function tryParseJsonTranslate(content) {
 }
 
 
+// ============ 学术文献检索 ============
+
+function searchSemanticScholar(term) {
+  return new Promise((resolve) => {
+    const query = encodeURIComponent(term.trim());
+    const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${query}&limit=1&fields=title,authors,year,url`;
+
+    const parsed = new URL(url);
+    const req = https.request({
+      hostname: parsed.hostname,
+      port: 443,
+      path: parsed.pathname + parsed.search,
+      method: 'GET',
+      headers: { 'User-Agent': 'TermExplainer/3.3' },
+      timeout: 8000,
+      agent: false
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        try {
+          const body = Buffer.concat(chunks).toString('utf8');
+          const data = JSON.parse(body);
+          if (data.data && data.data.length > 0) {
+            const p = data.data[0];
+            const authors = (p.authors || []).slice(0, 2).map(a => a.name).join(', ');
+            resolve({
+              title: p.title || '',
+              authors: authors || '',
+              year: p.year || '',
+              url: p.url || p.externalIds?.DOI ? `https://doi.org/${p.externalIds.DOI}` : '',
+              source: 'Semantic Scholar'
+            });
+          } else {
+            resolve(null);
+          }
+        } catch { resolve(null); }
+      });
+    });
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.on('error', () => { resolve(null); });
+    req.end();
+  });
+}
+
+function searchOpenAlex(term) {
+  return new Promise((resolve) => {
+    const query = encodeURIComponent(term.trim());
+    const url = `https://api.openalex.org/works?search=${query}&per_page=1&mailto=endofnirvana@github.io`;
+
+    const parsed = new URL(url);
+    const req = https.request({
+      hostname: parsed.hostname,
+      port: 443,
+      path: parsed.pathname + parsed.search,
+      method: 'GET',
+      headers: { 'User-Agent': 'TermExplainer/3.3' },
+      timeout: 8000,
+      agent: false
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        try {
+          const body = Buffer.concat(chunks).toString('utf8');
+          const data = JSON.parse(body);
+          if (data.results && data.results.length > 0) {
+            const r = data.results[0];
+            const authors = (r.authorships || []).slice(0, 2)
+              .map(a => a.author?.display_name || '').filter(Boolean).join(', ');
+            const url = r.primary_location?.landing_page_url ||
+              (r.doi ? r.doi : '');
+            resolve({
+              title: r.title || '',
+              authors: authors || '',
+              year: (r.publication_date || '').slice(0, 4),
+              url: url,
+              source: 'OpenAlex'
+            });
+          } else {
+            resolve(null);
+          }
+        } catch { resolve(null); }
+      });
+    });
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.on('error', () => { resolve(null); });
+    req.end();
+  });
+}
+
+async function callLLMScholar(term) {
+  // 并行：LLM 解释 + 两个文献数据库
+  const [llmResult, ref1, ref2] = await Promise.allSettled([
+    callLLM(term),
+    searchSemanticScholar(term),
+    searchOpenAlex(term)
+  ]);
+
+  const result = {
+    success: false,
+    data: null,
+    references: []
+  };
+
+  // 解析 LLM 结果
+  if (llmResult.status === 'fulfilled' && llmResult.value && llmResult.value.success) {
+    result.success = true;
+    result.data = llmResult.value.data;
+    result.model = llmResult.value.model;
+    result.rawContent = llmResult.value.rawContent;
+  } else {
+    const err = llmResult.status === 'fulfilled' ? llmResult.value : null;
+    result.error = err?.error || 'LLM 查询失败';
+  }
+
+  // 收集文献
+  if (ref1.status === 'fulfilled' && ref1.value) {
+    result.references.push(ref1.value);
+  }
+  if (ref2.status === 'fulfilled' && ref2.value) {
+    result.references.push(ref2.value);
+  }
+
+  return result;
+}
+
+
 async function testApiConnection(settings) {
   const baseUrl = (settings.apiEndpoint || '').replace(/\/$/, '');
   const apiKey = settings.apiKey || '';
@@ -1001,21 +1163,25 @@ function setupIPC() {
   ipcMain.handle('save-settings', (event, settings) => {
     const oldHotkey = Store.get('hotkey', DEFAULT_CONFIG.hotkey);
     const oldTranslateHotkey = Store.get('translateHotkey', DEFAULT_CONFIG.translateHotkey);
+    const oldScholarHotkey = Store.get('scholarHotkey', DEFAULT_CONFIG.scholarHotkey);
 
     Store.set('apiEndpoint', settings.apiEndpoint || '');
     Store.set('apiKey', settings.apiKey || '');
     Store.set('apiModel', settings.apiModel || '');
     Store.set('hotkey', settings.hotkey || DEFAULT_CONFIG.hotkey);
     Store.set('translateHotkey', settings.translateHotkey || DEFAULT_CONFIG.translateHotkey);
+    Store.set('scholarHotkey', settings.scholarHotkey || DEFAULT_CONFIG.scholarHotkey);
     Store.set('cancelKey', settings.cancelKey || DEFAULT_CONFIG.cancelKey);
 
     const hotkeyChanged = settings.hotkey && settings.hotkey !== oldHotkey;
     const translateHotkeyChanged = settings.translateHotkey && settings.translateHotkey !== oldTranslateHotkey;
+    const scholarHotkeyChanged = settings.scholarHotkey && settings.scholarHotkey !== oldScholarHotkey;
 
-    if (hotkeyChanged || translateHotkeyChanged) {
+    if (hotkeyChanged || translateHotkeyChanged || scholarHotkeyChanged) {
       registerHotkey(
         settings.hotkey || currentHotkey,
-        settings.translateHotkey || currentTranslateHotkey
+        settings.translateHotkey || currentTranslateHotkey,
+        settings.scholarHotkey || currentScholarHotkey
       );
       if (tray) {
         tray.setToolTip('术语解释器 - 解释:' + (settings.hotkey || currentHotkey).replace('CommandOrControl+', 'Ctrl+'));
@@ -1084,6 +1250,10 @@ function setupIPC() {
     return await callLLMTranslate(term);
   });
 
+  ipcMain.handle('call-llm-scholar', async (event, term) => {
+    return await callLLMScholar(term);
+  });
+
   ipcMain.on('close-popup', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win) win.close();
@@ -1100,7 +1270,8 @@ app.whenReady().then(() => {
 
   const hotkey = Store.get('hotkey', DEFAULT_CONFIG.hotkey);
   const translateHotkey = Store.get('translateHotkey', DEFAULT_CONFIG.translateHotkey);
-  registerHotkey(hotkey, translateHotkey);
+  const scholarHotkey = Store.get('scholarHotkey', DEFAULT_CONFIG.scholarHotkey);
+  registerHotkey(hotkey, translateHotkey, scholarHotkey);
 
   createTray();
   setupIPC();
