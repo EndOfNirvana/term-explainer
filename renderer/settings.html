@@ -206,9 +206,14 @@ h2 {
 <div class="section">
   <div class="section-title">快捷键</div>
   <div class="form-group">
-    <label>查询快捷键</label>
+    <label>解释快捷键</label>
     <input type="text" id="hotkey" placeholder="CommandOrControl+Shift+D" style="font-family: monospace;">
-    <div class="hint">Electron 快捷键格式。默认 Ctrl+Shift+D</div>
+    <div class="hint">选中词语后按此键，弹出三种解释。默认 Ctrl+Shift+D</div>
+  </div>
+  <div class="form-group">
+    <label>翻译快捷键</label>
+    <input type="text" id="translateHotkey" placeholder="CommandOrControl+Shift+T" style="font-family: monospace;">
+    <div class="hint">选中英文后按此键，弹出中文翻译 + 三种解释。默认 Ctrl+Shift+T</div>
   </div>
   <div class="form-group">
     <label>关闭弹窗按键</label>
@@ -221,10 +226,11 @@ h2 {
 <div class="section">
   <div class="section-title">使用方式</div>
   <div class="hint" style="line-height:1.7; margin-top:0;">
-    1. 在任意应用中<b style="color:#e2e8f0;">选中</b>需要解释的术语<br>
-    2. 按下 <b style="color:#818cf8;">Ctrl+Shift+D</b> 查询<br>
-    3. 三种解释：学术定义 + 两种通俗理解<br>
-    4. <b style="color:#e2e8f0;">点击卡片</b>可复制解释内容
+    🔍 <b style="color:#e2e8f0;">解释模式</b>（默认 <b style="color:#818cf8;">Ctrl+Shift+D</b>）<br>
+    &nbsp;&nbsp;&nbsp;选中任意术语 → 按快捷键 → 学术定义 + 两种通俗解释<br><br>
+    🌐 <b style="color:#e2e8f0;">翻译模式</b>（默认 <b style="color:#34d399;">Ctrl+Shift+T</b>）<br>
+    &nbsp;&nbsp;&nbsp;选中英文词语/句子 → 按快捷键 → 中文翻译 + 学术定义 + 两种通俗解释<br><br>
+    点击弹窗中任意卡片可复制内容
   </div>
 </div>
 
@@ -253,6 +259,7 @@ async function loadSettings() {
   document.getElementById('apiKey').value = s.apiKey || '';
   document.getElementById('apiModel').value = s.apiModel || '';
   document.getElementById('hotkey').value = s.hotkey || '';
+  document.getElementById('translateHotkey').value = s.translateHotkey || '';
   document.getElementById('cancelKey').value = s.cancelKey || 'Escape';
 }
 loadSettings();
@@ -263,6 +270,7 @@ function getFormData() {
     apiKey: document.getElementById('apiKey').value.trim(),
     apiModel: document.getElementById('apiModel').value.trim() || 'gpt-4o-mini',
     hotkey: document.getElementById('hotkey').value.trim() || 'CommandOrControl+Shift+D',
+    translateHotkey: document.getElementById('translateHotkey').value.trim() || 'CommandOrControl+Shift+T',
     cancelKey: document.getElementById('cancelKey').value.trim() || 'Escape',
   };
 }

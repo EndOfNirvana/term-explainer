@@ -14,6 +14,7 @@ const { URL } = require('url');
 // ============ 配置 ============
 const DEFAULT_CONFIG = {
   hotkey: 'CommandOrControl+Shift+D',
+  translateHotkey: 'CommandOrControl+Shift+T',
   cancelKey: 'Escape',
   apiEndpoint: '',
   apiKey: '',
@@ -25,6 +26,7 @@ let tray = null;
 let settingsWindow = null;
 let popupWindows = [];
 let currentHotkey = DEFAULT_CONFIG.hotkey;
+let currentTranslateHotkey = DEFAULT_CONFIG.translateHotkey;
 let isQuitting = false;
 
 // ============ 配置存储 ============
@@ -228,7 +230,7 @@ async function getSelectedText() {
 }
 
 // ============ 多弹窗管理 ============
-function createPopupWindow(term) {
+function createPopupWindow(term, mode = 'explain') {
   const cursor = screen.getCursorScreenPoint();
   const display = screen.getDisplayNearestPoint(cursor);
   const bounds = display.workArea;
@@ -270,7 +272,7 @@ function createPopupWindow(term) {
 
   win.once('ready-to-show', () => {
     win.show();
-    win.webContents.send('init-term', term);
+    win.webContents.send('init-term', { term, mode });
     const cancelKey = Store.get('cancelKey', 'Escape');
     win.webContents.send('config-cancel-key', cancelKey);
   });
@@ -299,30 +301,61 @@ async function handleShortcut() {
   const term = await getSelectedText();
 
   if (!term) {
-    createPopupWindow('');
+    createPopupWindow('', 'explain');
     return;
   }
 
-  createPopupWindow(term);
+  createPopupWindow(term, 'explain');
 }
 
-function registerHotkey(hotkey) {
+async function handleTranslateShortcut() {
+  if (settingsWindow && settingsWindow.isFocused()) {
+    return;
+  }
+
+  const term = await getSelectedText();
+
+  if (!term) {
+    createPopupWindow('', 'translate');
+    return;
+  }
+
+  createPopupWindow(term, 'translate');
+}
+
+function registerHotkey(hotkey, translateHotkey) {
   try {
     globalShortcut.unregisterAll();
   } catch(e) {}
 
-  const success = globalShortcut.register(hotkey, handleShortcut);
-  if (success) {
-    currentHotkey = hotkey;
-    console.log('Hotkey registered:', hotkey);
-    return true;
+  // 注册主快捷键（解释）
+  const hk = hotkey || currentHotkey;
+  const success1 = globalShortcut.register(hk, handleShortcut);
+  if (success1) {
+    currentHotkey = hk;
+    console.log('Hotkey registered:', hk);
   } else {
-    console.error('Failed to register hotkey:', hotkey);
-    if (hotkey !== DEFAULT_CONFIG.hotkey) {
-      return globalShortcut.register(DEFAULT_CONFIG.hotkey, handleShortcut);
+    console.error('Failed to register hotkey:', hk);
+    if (hk !== DEFAULT_CONFIG.hotkey) {
+      if (globalShortcut.register(DEFAULT_CONFIG.hotkey, handleShortcut)) {
+        currentHotkey = DEFAULT_CONFIG.hotkey;
+      }
     }
-    return false;
   }
+
+  // 注册翻译快捷键
+  const thk = translateHotkey || currentTranslateHotkey;
+  if (thk && thk !== hk) {
+    const success2 = globalShortcut.register(thk, handleTranslateShortcut);
+    if (success2) {
+      currentTranslateHotkey = thk;
+      console.log('Translate hotkey registered:', thk);
+    } else {
+      console.error('Failed to register translate hotkey:', thk);
+    }
+  }
+
+  return success1;
 }
 
 // ============ 设置窗口 ============
@@ -374,9 +407,14 @@ function createTray() {
       click: () => createSettingsWindow()
     },
     {
-      label: '🔍 查询选中文本',
+      label: '🔍 解释选中文本',
       accelerator: currentHotkey,
       click: () => handleShortcut()
+    },
+    {
+      label: '🌐 翻译选中文本',
+      accelerator: currentTranslateHotkey,
+      click: () => handleTranslateShortcut()
     },
     { type: 'separator' },
     {
@@ -758,7 +796,135 @@ function extractField(text, keys) {
   return null;
 }
 
-// ============ API 测试（简化版，用于设置页快速验证）============
+// ============ 翻译 + 解释（使用原生 https，零外部依赖）============
+async function callLLMTranslate(term) {
+  const baseUrl = Store.get('apiEndpoint', '').replace(/\/$/, '');
+  const apiKey = Store.get('apiKey', '');
+  const model = Store.get('apiModel', '');
+
+  if (!baseUrl || !apiKey) {
+    return { success: false, error: '未配置 API，请右键系统托盘 → 设置' };
+  }
+
+  if (!term || !term.trim()) {
+    return { success: false, error: '内容为空' };
+  }
+
+  const prompt = `请严格按以下JSON格式翻译并解释（不要markdown代码块，不要任何额外文字，只输出纯JSON）：
+{"translation":"中文翻译","definition":"学术定义","plain1":"通俗理解①","plain2":"通俗理解②"}
+
+内容：「${term.trim()}」
+
+其中：
+- translation：准确的中文翻译（若已是中文则写"[中文]"）
+- definition：基于中文翻译给出准确严谨的定义，50-100字
+- plain1：用大白话和生活化比喻解释，让完全不懂的人也能秒懂，50-100字
+- plain2：换个角度或用另一种比喻解释，加深理解，50-100字
+
+只输出JSON，不输出其他任何文字。`;
+
+  const body = JSON.stringify({
+    model,
+    messages: [{ role: 'user', content: prompt }]
+  });
+
+  const url = `${baseUrl}/chat/completions`;
+  const maxRetries = 2;
+  let lastError = '';
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const resp = await nativeRequest('POST', url, {
+        'Authorization': `Bearer ${apiKey}`
+      }, body, 30000);
+
+      if (!resp.ok) {
+        let errDetail = '';
+        if (resp.status === 401) errDetail = 'API Key 无效或已过期';
+        else if (resp.status === 403) errDetail = 'API 访问被拒绝 (403)，可能账户欠费';
+        else if (resp.status === 429) errDetail = '请求频率超限，请稍后重试';
+        else if (resp.status >= 500) errDetail = 'API 服务器内部错误';
+        else errDetail = `HTTP ${resp.status}: ${resp.data.error?.message || resp.data.message || ''}`;
+        return { success: false, error: errDetail };
+      }
+
+      const content = resp.data.choices?.[0]?.message?.content || '';
+      const result = tryParseJsonTranslate(content);
+
+      if (result) {
+        return { success: true, data: result, model: resp.data.model || model };
+      }
+
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 300));
+        continue;
+      }
+
+      return { success: true, data: null, rawContent: content, model: resp.data.model || model };
+
+    } catch (e) {
+      lastError = e.message;
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 500));
+        continue;
+      }
+      break;
+    }
+  }
+
+  // 错误分析（复用同样逻辑）
+  if (lastError.startsWith('DNS_NOT_FOUND:')) {
+    return { success: false, error: `DNS 解析失败，请检查网络或关闭 VPN` };
+  }
+  if (lastError.startsWith('CONNECTION_RESET') || lastError.startsWith('CONNECTION_REFUSED:')) {
+    return { success: false, error: `连接失败，VPN/代理可能拦截了请求，请关闭 VPN 重试` };
+  }
+  if (lastError.startsWith('TCP_TIMEOUT') || lastError.startsWith('REQUEST_TIMEOUT')) {
+    return { success: false, error: `请求超时，请检查网络或关闭 VPN` };
+  }
+  if (lastError.startsWith('SSL_ERROR:')) {
+    return { success: false, error: `SSL 错误，VPN 可能拦截了 HTTPS 流量，请关闭 VPN 重试` };
+  }
+  return { success: false, error: `网络错误: ${lastError.slice(0, 150)}` };
+}
+
+function tryParseJsonTranslate(content) {
+  if (!content) return null;
+
+  // 策略1：直接 parse
+  try { return JSON.parse(content); } catch {}
+
+  // 策略2：去掉 markdown 代码块
+  const codeBlock = content.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+  if (codeBlock) {
+    try { return JSON.parse(codeBlock[1]); } catch {}
+  }
+
+  // 策略3：提取第一个 {...} 块
+  let depth = 0, start = -1;
+  for (let i = 0; i < content.length; i++) {
+    if (content[i] === '{') { if (depth === 0) start = i; depth++; }
+    else if (content[i] === '}') { depth--; if (depth === 0 && start >= 0) {
+      try { return JSON.parse(content.slice(start, i + 1)); } catch {}
+      break;
+    }}
+  }
+
+  // 策略4：段落切分
+  const lines = content.split(/\n+/).filter(l => l.trim().length > 3);
+  if (lines.length >= 3) {
+    return {
+      translation: lines[0].replace(/^(翻译|中文翻译|translation)[：:]\s*/i, '').trim(),
+      definition: lines[1].replace(/^(定义|学术定义|definition)[：:]\s*/i, '').trim(),
+      plain1: lines[2].replace(/^(通俗理解[①②12]|plain[12])[：:]\s*/i, '').trim(),
+      plain2: lines[3] ? lines[3].replace(/^(通俗理解[①②12]|plain[12])[：:]\s*/i, '').trim() : lines[2].trim()
+    };
+  }
+
+  return null;
+}
+
+
 async function testApiConnection(settings) {
   const baseUrl = (settings.apiEndpoint || '').replace(/\/$/, '');
   const apiKey = settings.apiKey || '';
@@ -834,17 +1000,25 @@ function setupIPC() {
 
   ipcMain.handle('save-settings', (event, settings) => {
     const oldHotkey = Store.get('hotkey', DEFAULT_CONFIG.hotkey);
+    const oldTranslateHotkey = Store.get('translateHotkey', DEFAULT_CONFIG.translateHotkey);
 
     Store.set('apiEndpoint', settings.apiEndpoint || '');
     Store.set('apiKey', settings.apiKey || '');
     Store.set('apiModel', settings.apiModel || '');
     Store.set('hotkey', settings.hotkey || DEFAULT_CONFIG.hotkey);
+    Store.set('translateHotkey', settings.translateHotkey || DEFAULT_CONFIG.translateHotkey);
     Store.set('cancelKey', settings.cancelKey || DEFAULT_CONFIG.cancelKey);
 
-    if (settings.hotkey && settings.hotkey !== oldHotkey) {
-      registerHotkey(settings.hotkey);
+    const hotkeyChanged = settings.hotkey && settings.hotkey !== oldHotkey;
+    const translateHotkeyChanged = settings.translateHotkey && settings.translateHotkey !== oldTranslateHotkey;
+
+    if (hotkeyChanged || translateHotkeyChanged) {
+      registerHotkey(
+        settings.hotkey || currentHotkey,
+        settings.translateHotkey || currentTranslateHotkey
+      );
       if (tray) {
-        tray.setToolTip('术语解释器 - 选中文字按 ' + settings.hotkey.replace('CommandOrControl+', 'Ctrl+'));
+        tray.setToolTip('术语解释器 - 解释:' + (settings.hotkey || currentHotkey).replace('CommandOrControl+', 'Ctrl+'));
       }
     }
 
@@ -906,6 +1080,10 @@ function setupIPC() {
     return await callLLM(term);
   });
 
+  ipcMain.handle('call-llm-translate', async (event, term) => {
+    return await callLLMTranslate(term);
+  });
+
   ipcMain.on('close-popup', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win) win.close();
@@ -921,7 +1099,8 @@ app.whenReady().then(() => {
   Store.load();
 
   const hotkey = Store.get('hotkey', DEFAULT_CONFIG.hotkey);
-  registerHotkey(hotkey);
+  const translateHotkey = Store.get('translateHotkey', DEFAULT_CONFIG.translateHotkey);
+  registerHotkey(hotkey, translateHotkey);
 
   createTray();
   setupIPC();
